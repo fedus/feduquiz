@@ -1,0 +1,1028 @@
+#:import Animation kivy.animation.Animation
+#:import AlphaEffect alpha_shader.AlphaEffect
+#:import Scan kivy.uix.effectwidget.ScanlinesEffect
+#:import randint random.randint
+#:import partial functools.partial
+#:import App kivy.app.App
+<Screen>
+    canvas.before:
+        Color:
+            rgb: app.bg_col
+        Rectangle:
+            # self here refers to the widget i.e FloatLayout
+            pos: self.pos
+            size: self.size
+
+<TitleScreen>
+    MainTitle:
+        id: main_title
+        pos_hint: {'center_x': 0.5, 'center_y': 0.85}
+        text: root.title_text or ''
+        scale: 0
+
+
+
+<Intro>
+    MainTitle:
+        id: feduquiz_title
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        text: 'Feduquiz'
+        size_hint: None, None
+        size: self.texture_size
+        opacity: 0
+        scale: 0
+        outline_color: root.outline_col     # To be moved to MainTitle def and move anim in there.
+
+
+    PlayOrOptions:
+        id: press_ok
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<RoundedBox>
+    spacing: 20
+    padding: 30
+
+    canvas.before:
+        Color:
+            rgba: (0, 0, 0, 0.3)
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [30,]
+
+<PressOK>
+    font_name: 'PressStart2P-Regular'
+    text: '- Press OK to play -'
+    font_size: 60
+
+<PlayOrOptions>
+    orientation: 'vertical'
+    size: self.minimum_size
+    size_hint: None, None
+
+    PressColor:
+        pos_hint: {'center_y': 0.5}
+        pre_text: '- Press'
+        butt_col: [0,0,0,1]
+        butt_text: 'OK'
+        post_text: 'for new game -'
+
+    PressColor:
+        pos_hint: {'center_y': 0.5}
+        pre_text: '- Press'
+        butt_col: [1,0,0,1]
+        butt_text: 'RED'
+        post_text: 'for  options -'
+
+<PressColor>
+    orientation: 'horizontal'
+    size: self.minimum_size
+    spacing: 20
+    pre_label: pre
+    size_hint: None, None
+    font_size: 40
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: pre
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.pre_text or ''
+        size_hint: None, None
+        size: self.texture_size
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: butt
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.butt_text or ''
+        size_hint: None, None
+        size: max(self.texture_size[0]+10, 170), self.texture_size[1]+10
+        #halign: 'left'
+
+        canvas.before:
+            Color:
+                rgba: root.butt_col or [1,1,1,1]
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [10,]
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: post
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.post_text or ''
+        size_hint: None, None
+        size: self.texture_size
+
+
+<MainTitle>
+    font_name: 'LuckiestGuy-Regular'
+    font_size: 200
+    outline_width: 25
+    outline_color: 0,0,0,1
+
+    canvas.before:
+        PushMatrix:
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+    canvas.after:
+        PopMatrix:
+
+<Options>
+    title_text: 'Options'
+
+    ScrollMenu:
+        id: menu
+        menu_width: 1100
+        items_per_page: 5
+        pos_hint: {'center_x': .5, 'center_y': .5}
+
+        OptionButton:
+            focus: True
+            text: 'Start game'
+            on_press: root.goto_func(app.load_game)
+        OptionButton:
+            text: 'Instructions'
+            on_press: root.goto_func(partial(app.goto_screen, s_name='instructions'))
+        OptionButton:
+            text: 'Categories'
+            multiple_choice: True
+            action_target: 'opt_category'
+            choices: app.categories if app.categories else [['All', 0]]
+        OptionButton:
+            text: 'Difficulty'
+            multiple_choice: True
+            action_target: 'opt_difficulty'
+            choices: [['Mixed', ''], ['Easy', 'easy'], ['Medium', 'medium'], ['Hard', 'hard']]
+        OptionButton:
+            text: 'Type'
+            multiple_choice: True
+            action_target: 'opt_type'
+            choices: [['Mixed', ''], ['Multiple choice', 'multiple'], ['True/False', 'boolean']]
+        OptionButton:
+            text: 'Amount'
+            multiple_choice: True
+            action_target: 'opt_amount'
+            choices: [[str(x), x] for x in range(5, 30, 5)]
+        OptionButton:
+            text: 'Instant feedback'
+            multiple_choice: True
+            action_target: 'opt_instant_fb'
+            choices: [['Yes', True], ['No', False]]
+        OptionButton:
+            text: 'Credits'
+            on_press: root.goto_func(partial(app.goto_screen, s_name='credits'))
+
+    BoxLayout:
+        id: navigation
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.10}
+        orientation: 'horizontal'
+        spacing: 20
+        padding: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        canvas.before:
+            Color:
+                rgba: (0, 0, 0, 0.3)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [15,]
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'OK'
+            post_text: 'to select'
+            font_size: 30
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'ARROWS'
+            post_text: 'to navigate'
+            font_size: 30
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'EXIT'
+            post_text: 'to quit'
+            font_size: 30
+
+<OptionButton>
+    font_name: 'PressStart2P-Regular'
+    text: ''
+    font_size: 40
+    height: 70
+    scale: 1
+    multiple_choice: False
+
+    show_arrow: False
+    outline_width: 10 if self.focus else 0
+    arrow_left: self.x+30, self.center_y+20, self.x+10, self.center_y, self.x+30, self.center_y-20
+    arrow_right: self.right-30, self.center_y+20, self.right-10, self.center_y, self.right-30, self.center_y-20
+
+
+    on_focus:
+        if not self.focus: setattr(self, 'show_arrow', False)
+
+    canvas.before:
+
+        Color:
+            rgb: 1, 1, 1
+
+        Line:
+            points: self.arrow_left if self.show_arrow else []
+            cap: 'round'
+            joint: 'round'
+            close: False
+            width: 10
+
+        Line:
+            points: self.arrow_right if self.show_arrow else []
+            cap: 'round'
+            joint: 'round'
+            close: False
+            width: 10
+
+        PushMatrix:
+
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+
+    canvas.after:
+        PopMatrix:
+
+<Game>
+    GameInfo:
+        id: info_widget
+        secondary_position: 0.5, 1.2
+        primary_position: 0.5, 0.95
+        pos_hint: {'center_x': self.secondary_position[0], 'top': self.secondary_position[1]}
+    QuestionLabel:
+        id: question_label
+        opacity: 0
+        secondary_position_1: 0.5, 0.8
+        secondary_position_2: 0.5, 0.4
+        primary_position: 0.5, 0.55
+        pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+        parent_width: root.width
+    GameButtons:
+        id: game_buttons
+        game_root: root
+    AnswerFeedbackLabel:
+        id: positive_label
+        opacity: 0
+        pos_hint: {'center_x': 0.35, 'center_y': 0.60}
+        sentiment: 'pos'
+        text: ''
+    AnswerFeedbackLabel:
+        id: negative_label
+        opacity: 0
+        pos_hint: {'center_x': 0.65, 'center_y': 0.50}
+        sentiment: 'neg'
+        text: ''
+
+<Round>
+    round_1_pos: round_1.pos
+    round_1_pos_x: round_1.x
+    round_1_pos_y: round_1.y
+
+    round_2_pos: round_2.pos
+    round_2_pos_x: round_2.x
+    round_2_pos_y: round_2.y
+
+    round_1_size: round_1.size
+    round_1_width: round_1.width
+    round_1_height: round_1.height
+
+    round_2_size: round_2.size
+    round_2_width: round_2.width
+    round_2_height: round_2.height
+
+    orientation: 'horizontal'
+    size: self.minimum_size
+    size_hint: None, None
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: (root.round_1_pos_x, root.round_1_pos_y) if root.round_1_pos else (0,0)
+            size: (root.round_1_width+30, root.round_1_height) if root.round_1_size else (0,0)
+            radius: [30,]
+
+        RoundedRectangle:
+            pos: (root.round_2_pos_x, root.round_2_pos_y) if root.round_1_pos else (0,0)
+            size: (root.round_2_width, root.round_2_height) if root.round_2_size else (0,0)
+            radius: [30,]
+
+
+        # Border of background shapes
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        # The following rectangle was taken out for aesthetic purposes.
+        #RoundedRectangle:
+        #    pos: (root.round_1_pos_x+5, root.round_1_pos_y+5) if root.round_1_pos else (0,0)
+        #    size: (root.round_1_width+30, root.round_1_height-10) if root.round_1_size else (0,0)    # Slight overlap required
+        #    radius: [30,]
+
+        RoundedRectangle:
+            pos: (root.round_2_pos_x+5, root.round_2_pos_y+5) if root.round_2_pos else (0,0)
+            size: (root.round_2_width-10, root.round_2_height-10) if root.round_2_size else (0,0)
+            radius: [30,]
+
+    Label:
+        id: round_1
+        text: 'Round'
+        font_size: sp(60)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size[0]*1.35, self.texture_size[1]
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+
+    Label:
+        id: round_2
+        text: '%d of %d' % (app.curr_round, app.curr_total_rounds)
+        font_size: sp(80)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size[0]*1.35, self.texture_size[1]
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+
+<Difficulty>
+    difficulty_label_pos: difficulty_label.pos
+    difficulty_label_pos_x: difficulty_label.x
+    difficulty_label_pos_y: difficulty_label.y
+    difficulty_label_width: difficulty_label.width
+    difficulty_label_height: difficulty_label.height
+
+    indicator_easy_pos_x: indicator_easy.x
+    indicator_easy_pos_y: indicator_easy.y
+    indicator_hard_pos_x: indicator_hard.x
+    indicator_hard_pos_y: indicator_hard.y
+
+    indicator_layout_pos: indicator_layout.pos
+    indicator_layout_size: indicator_layout.size
+    indicator_layout: indicator_layout
+
+    indicator_size: (root.difficulty_label_height * 1.06, root.difficulty_label_height * 1.06) if root.difficulty_label_height else (20,20)
+
+    orientation: 'horizontal'
+    size: self.minimum_size
+    size_hint: None, None
+
+    on_indicator_layout: print('Layout pos: ' + str(root.indicator_layout_pos))
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: (root.difficulty_label_pos_x, root.difficulty_label_pos_y) if root.difficulty_label_pos else (0,0)
+            size: (root.difficulty_label_width+30, root.difficulty_label_height) if root.difficulty_label_width else (0,0)
+            radius: [30,]
+
+        RoundedRectangle:
+            pos: root.indicator_layout.pos if root.indicator_layout else (0,0)
+            size: root.indicator_layout.size if root.indicator_layout else (0,0)
+            radius: [30,]
+
+
+        # Border of background shapes
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        # The following rectangle was taken out for aesthetic purposes.
+        #RoundedRectangle:
+        #    pos: (root.round_1_pos_x+5, root.round_1_pos_y+5) if root.round_1_pos else (0,0)
+        #    size: (root.round_1_width+30, root.round_1_height-10) if root.round_1_size else (0,0)    # Slight overlap required
+        #    radius: [30,]
+
+        RoundedRectangle:
+            pos: (root.indicator_layout.x+5, root.indicator_layout.y+5) if root.indicator_layout else (0,0)
+            size: (root.indicator_layout.width-10, root.indicator_layout.height-10) if root.indicator_layout else (0,0)
+            radius: [30,]
+
+    Label:
+        id: difficulty_label
+        text: 'Difficulty'
+        font_size: sp(60)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size[0]*1.35, self.texture_size[1]
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+
+    BoxLayout:
+        id: indicator_layout
+        orientation: 'horizontal'
+        padding: 10
+        spacing: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        Difficulty_Indicator:
+            widget_difficulty: 'easy'
+            id: indicator_easy
+            indicator_size: root.indicator_size
+        Difficulty_Indicator:
+            widget_difficulty: 'medium'
+            id: indicator_medium
+            indicator_size: root.indicator_size
+        Difficulty_Indicator:
+            widget_difficulty: 'hard'
+            id: indicator_hard
+            indicator_size: root.indicator_size
+
+<Difficulty_Indicator>
+    diff_colors: {'easy': (0,1,0), 'medium': (1,0.6,0), 'hard': (1,0,0)}
+    diff_levels: {'easy': 0, 'medium': 1, 'hard': 2}
+
+    current_difficulty: app.curr_difficulty
+
+    indicator_color: self.diff_colors.get(self.widget_difficulty, (0,0,0,1))
+    indicator_size: [20, 20]
+
+    size: self.indicator_size
+    size_hint: None, None
+    pose_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    scale: 0
+    opacity: 1
+    fore_opacity: 0
+    visible: False
+
+    on_current_difficulty:
+        print('On current difficulty: ' + self.current_difficulty)
+        print('Indicator color: ' + str(self.indicator_color))
+
+        # The encapsulation gods are weeping right now. (OutsourcedGuru 21/02/2019 20:46)
+        if (self.diff_levels.get(self.current_difficulty) >= self.diff_levels.get(self.widget_difficulty)) and not self.visible: (
+        Animation(fore_opacity=1, scale=1, t='out_back', duration=0.5).start(self), setattr(self, 'visible', True)
+        )
+
+        if (self.diff_levels.get(self.current_difficulty) < self.diff_levels.get(self.widget_difficulty)) and self.visible: (
+        Animation(fore_opacity=0, scale=0, t='out_bounce', duration=0.5).start(self), setattr(self, 'visible', False)
+        )
+
+    canvas.before:
+        Color:
+            rgba: (0.45, 0.0, 0.45, 1)
+
+        Ellipse:
+            size: self.indicator_size or self.size
+            pos: self.pos
+
+        PushMatrix:
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+
+    canvas:
+        Color:
+            rgba: (self.indicator_color[0], self.indicator_color[1], self.indicator_color[2], self.fore_opacity) if (self.indicator_color and self.fore_opacity) else (0,0,0,1)
+
+        Ellipse:
+            size: self.indicator_size or self.size
+            pos: self.pos
+
+    canvas.after:
+        PopMatrix:
+
+
+<QuestionLabel>
+    text_size: (self.parent_width*0.8, None)
+    halign: 'center'
+    size: self.texture_size
+    size_hint: None, None
+    text: app.curr_question if app.curr_question else 'N/A'
+    font_size: sp(90)
+    font_name: 'LondrinaSolid-Light'
+
+    bg_pos: self.x-30, self.y-30
+    bg_size: self.width+60, self.height+60
+
+    canvas.before:
+        StencilPush
+
+        # create a rectangular mask with a pos of (100, 100) and a (100, 100) size.
+        RoundedRectangle:
+            pos: self.center_x - (self.mask_width/2), self.bg_pos[1]
+            size: self.mask_width, self.bg_size[1]
+            radius: [30,]
+
+        StencilUse
+
+        Color:
+            rgba: (0,0,0,0.3)
+
+        Rectangle:
+            pos: self.bg_pos
+            size: self.bg_size
+
+    canvas.after:
+        StencilUnUse
+
+        RoundedRectangle:
+            pos: self.center_x - (self.mask_width/2), self.bg_pos[1]
+            size: self.mask_width, self.bg_size[1]
+            radius: [30,]
+
+        StencilPop
+
+<Instructions>
+    title_text: 'Instructions'
+
+    RoundedBox:
+        orientation: 'vertical'
+        size_hint: 0.8, 0.55
+        pos_hint: {'center_x': 0.5, 'center_y': 0.45}
+
+        Label:
+            #pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+            text: app.instruction_text or ''
+            font_size: sp(50)
+            font_name: 'LondrinaSolid-Light'
+            text_size: self.width, None
+            halign: 'left'
+            valign: 'top'
+            height: self.texture_size[1]
+            size_hint: 1, None
+            pos_hint: {'y': 1}
+
+        Widget:
+            # For spacing, so that the label sits on the top of the BoxLayout
+
+    BoxLayout:
+        id: navigation
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.10}
+        orientation: 'horizontal'
+        spacing: 20
+        padding: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        canvas.before:
+            Color:
+                rgba: (0, 0, 0, 0.3)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [15,]
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'OK'
+            post_text: 'to go back'
+            font_size: 30
+
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'EXIT'
+            post_text: 'to quit'
+            font_size: 30
+
+<Credits>
+    title_text: 'Credits'
+
+<Score>
+    title_text: 'Score'
+
+    Label:
+        id: score
+        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
+        markup: True
+        text: '[b]' + str(app.curr_score) + '[/b] / ' + str(app.curr_total_rounds)
+        font_size: sp(160)
+        font_name: 'LondrinaSolid-Regular'
+    Label:
+        id: verdict
+        pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+        text: app.curr_verdict
+        font_size: sp(125)
+        font_name: 'LondrinaSolid-Light'
+        text_size: root.width*0.8, None
+        halign: 'center'
+        size: self.texture_size
+        size_hint: None, None
+    PlayOrOptions:
+        id: press_ok
+        opacity: 0
+        auto_anim: False
+        pos_hint: {'center_x': 0.5, 'center_y': 0.15}
+
+
+<AnswerFeedbackLabel>
+    size: self.texture_size
+    size_hint: None, None
+
+    color_neg: (207/255, 0/255, 15/255, 1)
+    color_pos: (30/255, 130/255, 76/255, 1)
+
+    font_name: 'LuckiestGuy-Regular'
+    font_size: 100
+
+    outline_color: self.color_pos if self.sentiment == 'pos' else self.color_neg
+    outline_width: 15
+
+    primary_angle: 10 if self.sentiment == 'pos' else -10
+    #primary_angle: 10
+    primary_scale: 2
+    secondary_angle: 40 if self.sentiment == 'pos' else -40
+    #secondary_angle: 40
+    secondary_scale: 3
+
+    angle: self.primary_angle
+    scale: 1
+
+    canvas.before:
+        PushMatrix:
+        Rotate:
+            angle: self.angle
+            axis: 0, 0, 1
+            origin: self.pos if self.sentiment == 'pos' else (self.pos[0]+self.width, self.pos[1]+self.height)
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+    canvas.after:
+        PopMatrix:
+
+
+<GameButtons>
+    size_hint: (1, 0.3)
+    btn_size_hint: (0.49, 0.47) if len(app.curr_btn_labels) > 2 else (0.49, 0.70)
+    FloatLayout:
+        size: root.size
+        id: game_btn_layout
+        TriviaButton:
+            id: btn_red
+            secondary_scale_1: 0.6
+            secondary_scale_2: 1.4
+            secondary_position_1: 0.25, -0.6
+            secondary_position_2: -0.5, 0.75
+            primary_position: (0.25, 0.75) if len(app.curr_btn_labels) > 2 else (0.25, 0.5)
+            scale: self.secondary_scale_1
+            pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+            size_hint: root.btn_size_hint
+            text: app.curr_btn_labels[0] if len(app.curr_btn_labels) > 0 else 'N/A'
+            base_color: 'red'
+            on_press: root.game_root.button_press(self.base_color)
+        TriviaButton:
+            id: btn_green
+            secondary_scale_1: 0.4
+            secondary_scale_2: 1.6
+            secondary_position_1: 0.75, -0.6
+            secondary_position_2: 1.5, 0.75
+            primary_position: (0.75, 0.75) if len(app.curr_btn_labels) > 2 else (0.75, 0.5)
+            scale: self.secondary_scale_1
+            pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+            size_hint: root.btn_size_hint
+            text: app.curr_btn_labels[1] if len(app.curr_btn_labels) > 1 else 'N/A'
+            base_color: 'green'
+            on_press: root.game_root.button_press(self.base_color)
+        TriviaButton:
+            id: btn_yellow
+            secondary_scale_1: 0.5
+            secondary_scale_2: 1.5
+            secondary_position_1: 0.25, -0.6
+            secondary_position_2: -0.5, 0.25
+            primary_position: 0.25, 0.25
+            scale: self.secondary_scale_1
+            pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+            size_hint: root.btn_size_hint
+            text: app.curr_btn_labels[2] if len(app.curr_btn_labels) > 2 else 'N/A'
+            base_color: 'yellow'
+            on_press: root.game_root.button_press(self.base_color)
+        TriviaButton:
+            id: btn_blue
+            secondary_scale_1: 0.7
+            secondary_scale_2: 1.3
+            secondary_position_1: 0.75, -0.6
+            secondary_position_2: 1.5, 0.25
+            primary_position: 0.75, 0.25
+            scale: self.secondary_scale_1
+            pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+            size_hint: root.btn_size_hint
+            text: app.curr_btn_labels[3] if len(app.curr_btn_labels) > 3 else 'N/A'
+            base_color: 'blue'
+            on_press: root.game_root.button_press(self.base_color)
+
+<TriviaButton>:
+    background_color: 0,0,0,0  # the last zero is the critical one, make invisible
+    scale: 1
+    x_transform: -20
+    x_transform_end: self.width if self.width else 0
+
+    red_col_normal: (246/255, 36/255, 89/255, 1)
+    red_col_down: (226/255, 106/255, 106/255, 1)
+    green_col_normal: (46/255, 204/255, 113/255, 1)
+    green_col_down: (102/255, 204/255, 153/255, 1)
+    yellow_col_normal: (247/255, 202/255, 24/255, 1)
+    yellow_col_down: (255/255, 255/255, 126/255, 1)
+    blue_col_normal: (25/255, 181/255, 254/255, 1)
+    blue_col_down: (129/255, 207/255, 224/255, 1)
+
+
+    curr_normal:
+        {
+        'red': self.red_col_normal,
+        'green': self.green_col_normal,
+        'yellow': self.yellow_col_normal,
+        'blue': self.blue_col_normal
+        }.get(self.base_color, (1,1,1,1))
+
+    curr_down:
+        {
+        'red': self.red_col_down,
+        'green': self.green_col_down,
+        'yellow': self.yellow_col_down,
+        'blue': self.blue_col_down
+        }.get(self.base_color, (1,1,1,1))
+
+    font_size: sp(70)
+    font_name: 'LondrinaSolid-Regular'
+    text_size: self.width*0.9, self.height*0.9
+    valign: 'middle'
+    halign: 'center'
+    line_height: 0.8
+
+    canvas.before:
+        PushMatrix:
+
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+
+        StencilPush
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [100,]
+
+        StencilUse
+
+        Color:
+            rgba: (1,1,1,1)
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [100,]
+
+        # < BUTTON SPECIAL EFFECT START
+
+        PushMatrix
+
+        Translate:
+            x: self.x_transform
+            y: 0
+            z: 0
+
+        Color:
+            rgba: self.curr_normal
+
+        Line:
+            #points: self.x, self.center_y, self.right, self.center_y
+            points: self.x-40, self.y, self.x, self.top
+            width: 30
+
+        Color:
+            rgba: (1,1,1,1)
+
+        PopMatrix
+
+        # BUTTON SPECIAL EFFECT STOP >
+
+        Color:
+            rgba:
+                (self.curr_normal
+                if self.state == 'normal' else
+                self.curr_down)
+
+        RoundedRectangle:
+            pos: self.x+5, self.y+5
+            size: self.width-10, self.height-10
+            radius: [100,]
+
+    canvas.after:
+        StencilUnUse
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [100,]
+
+        StencilPop
+
+        PopMatrix:
+
+<GameInfo>
+    orientation: 'horizontal'
+    spacing: 50
+    size: self.minimum_size
+    size_hint: None, None
+
+    Difficulty:
+        id: difficulty_widget
+
+
+    Round:
+        id: round_widget
+
+
+    Category:
+        id: category_widget
+        scroll_size: 500, round_widget.height
+
+<ScrollLabel>:
+    Label:
+        pos: root.pos
+        id: scrollable_label
+        size_hint_x: None
+        text: 'Bladibla'
+        width: (self.texture_size[0] + 2*(root.width)) if (self.texture_size[0] > root.width) else root.width
+        halign: 'center'
+        #on_width: root.update_animation(self.width)
+        font_size: root.font_size if root.font_size else sp(20)
+        font_name: root.font_name if root.font_name else 'Roboto'
+
+<Category>
+    cat: cat
+
+    orientation: 'horizontal'
+    size: self.minimum_size
+    size_hint: None, None
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: root.cat.pos if root.cat else (0,0)
+            size: root.cat.size if root.cat else (0,0)
+            radius: [30,]
+
+        # Border of background shapes
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        RoundedRectangle:
+            pos: (root.cat.x+5, root.cat.y+5) if root.cat else (0,0)
+            size: (root.cat.width-10, root.cat.height-10) if root.cat else (0,0)
+            radius: [30,]
+
+        StencilPush
+
+        RoundedRectangle:
+            pos: (root.cat.x+5, root.cat.y+5) if root.cat else (0,0)
+            size: (root.cat.width-10, root.cat.height-10) if root.cat else (0,0)
+            radius: [30,]
+
+        StencilUse
+
+    canvas.after:
+        StencilUnUse
+
+        RoundedRectangle:
+            pos: (root.cat.x+5, root.cat.y+5) if root.cat else (0,0)
+            size: (root.cat.width-10, root.cat.height-10) if root.cat else (0,0)
+            radius: [30,]
+
+        StencilPop
+
+    AlphaWidget:
+        id: cat
+        size: cat2.size
+        ScrollLabel:
+            id: cat2
+            label_text: app.curr_category
+            font_size: sp(80)
+            font_name: 'LondrinaSolid-Regular'
+            size_hint: None, None
+            size: root.scroll_size if root.scroll_size else (100,100)
+            #pos: alpha_widget.pos
+
+<-FreeScrollView>:
+    padding: 10
+
+    spacing: self.padding
+    height: (saware_layout.height_per_child * (min(len(saware_layout.children), self.items_per_page))) if self.items_per_page else 0
+    size_hint: None, None
+
+    do_scroll_x: False
+
+    # We are only keeping the ScrollView KV minus the scrollbars, and getting rid of the StencilView.
+    _handle_y_pos: (self.right - self.bar_width - self.bar_margin) if self.bar_pos_y == 'right' else (self.x + self.bar_margin), self.y + self.height * self.vbar[0]
+    _handle_y_size: min(self.bar_width, self.width), self.height * self.vbar[1]
+    _handle_x_pos: self.x + self.width * self.hbar[0], (self.y + self.bar_margin) if self.bar_pos_x == 'bottom' else (self.top - self.bar_margin - self.bar_width)
+    _handle_x_size: self.width * self.hbar[1], min(self.bar_width, self.height)
+
+    ScrollAwareLayout:
+        id: saware_layout
+        padding: root.padding or 0
+        spacing: root.spacing or 0
+        width: root.width or 0
+
+<ScrollAwareLayout>:
+    orientation: 'vertical'
+    size_hint: None, None
+    height: self.minimum_height
+
+<OptionIndicator>:
+    x_transform: 0
+    x_transform_max: 50
+
+    canvas:
+        Color:
+            rgba: (1,1,1,1)
+        PushMatrix:
+        Translate:
+            x: self.x_transform
+            y: 0
+            z: 0
+        RoundedRectangle:
+            pos: self.x + 5, self.y + 5
+            size: self.width - self.x_transform_max - 10, self.height - 10
+            segments: 2
+            radius: [5,]
+        #Line:
+        #    rounded_rectangle: self.x, self.y, self.width - self.x_transform_max, self.height, 10
+        #    width: 2
+        PopMatrix:
+
+<ScrollMenu>:
+    orientation: 'horizontal'
+    spacing: 50
+    size: self.minimum_size
+    size_hint: None, None
+    indicator_center_y: free_scroll_view.indicator_center_y
+    indicator: indicator
+
+    on_indicator_center_y:
+        print('Indicator center y: {} '.format(self.indicator_center_y))
+
+    canvas.before:
+        Color:
+            rgba: (0, 0, 0, 0.3)
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [30,]
+
+    OptionIndicator:
+        id: indicator
+        size: 150,50
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': root.indicator_center_y}
+
+    FreeScrollView:
+        id: free_scroll_view
+        items_per_page: root.items_per_page if root.items_per_page else 0
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        width: root.menu_width if root.menu_width else 0
+
+
+<AlphaWidget>
+    effects: [AlphaEffect(30)]
+    size_hint: None, None
+
+<Widget>
+    auto_anim: True
