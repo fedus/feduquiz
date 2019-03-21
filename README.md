@@ -5,9 +5,9 @@ Under heavy construction. Definitely still a prototype.
 ## Screenshots
 
 ![Title screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/01_title.png)
-![Options screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/01_options.png)
-![Game screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/01_game.png)
-![Score screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/01_score.png)
+![Options screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/02_options.png)
+![Game screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/03_game.png)
+![Score screen](https://raw.githubusercontent.com/fedus/feduquiz/master/screenshots/04_score.png)
 
 ## Credits
 BalooThambi: (c) EkType, https://github.com/EkType/Baloo
