@@ -30,3 +30,209 @@
         id: press_ok
         opacity: 0
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<Options>
+    title_text: 'Options'
+
+    ScrollMenu:
+        id: menu
+        menu_width: 1100
+        items_per_page: 5
+        pos_hint: {'center_x': .5, 'center_y': .5}
+
+        OptionButton:
+            focus: True
+            text: 'Start game'
+            on_press: root.goto_func(app.load_game)
+        OptionButton:
+            text: 'Instructions'
+            on_press: root.goto_func(partial(app.goto_screen, s_name='instructions'))
+        OptionButton:
+            text: 'Categories'
+            multiple_choice: True
+            action_target: 'opt_category'
+            choices: app.categories if app.categories else [['All', 0]]
+        OptionButton:
+            text: 'Difficulty'
+            multiple_choice: True
+            action_target: 'opt_difficulty'
+            choices: [['Mixed', ''], ['Easy', 'easy'], ['Medium', 'medium'], ['Hard', 'hard']]
+        OptionButton:
+            text: 'Type'
+            multiple_choice: True
+            action_target: 'opt_type'
+            choices: [['Mixed', ''], ['Multiple choice', 'multiple'], ['True/False', 'boolean']]
+        OptionButton:
+            text: 'Amount'
+            multiple_choice: True
+            action_target: 'opt_amount'
+            choices: [[str(x), x] for x in range(5, 30, 5)]
+        OptionButton:
+            text: 'Instant feedback'
+            multiple_choice: True
+            action_target: 'opt_instant_fb'
+            choices: [['Yes', True], ['No', False]]
+        OptionButton:
+            text: 'Credits'
+            on_press: root.goto_func(partial(app.goto_screen, s_name='credits'))
+
+    BoxLayout:
+        id: navigation
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.10}
+        orientation: 'horizontal'
+        spacing: 20
+        padding: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        canvas.before:
+            Color:
+                rgba: (0, 0, 0, 0.3)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [15,]
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'OK'
+            post_text: 'to select'
+            font_size: 30
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'ARROWS'
+            post_text: 'to navigate'
+            font_size: 30
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'EXIT'
+            post_text: 'to quit'
+            font_size: 30
+
+<Game>
+    GameInfo:
+        id: info_widget
+        secondary_position: 0.5, 1.2
+        primary_position: 0.5, 0.95
+        pos_hint: {'center_x': self.secondary_position[0], 'top': self.secondary_position[1]}
+    QuestionLabel:
+        id: question_label
+        opacity: 0
+        secondary_position_1: 0.5, 0.8
+        secondary_position_2: 0.5, 0.4
+        primary_position: 0.5, 0.55
+        pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
+        parent_width: root.width
+    GameButtons:
+        id: game_buttons
+        game_root: root
+    AnswerFeedbackLabel:
+        id: positive_label
+        opacity: 0
+        pos_hint: {'center_x': 0.35, 'center_y': 0.60}
+        sentiment: 'pos'
+        text: ''
+    AnswerFeedbackLabel:
+        id: negative_label
+        opacity: 0
+        pos_hint: {'center_x': 0.65, 'center_y': 0.50}
+        sentiment: 'neg'
+        text: ''
+
+<Instructions>
+    title_text: 'Instructions'
+
+    RoundedBox:
+        orientation: 'vertical'
+        size_hint: 0.8, 0.55
+        pos_hint: {'center_x': 0.5, 'center_y': 0.45}
+
+        Label:
+            #pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+            text: app.instruction_text or ''
+            font_size: sp(50)
+            font_name: 'LondrinaSolid-Light'
+            text_size: self.width, None
+            halign: 'left'
+            valign: 'top'
+            height: self.texture_size[1]
+            size_hint: 1, None
+            pos_hint: {'y': 1}
+
+        Widget:
+            # For spacing, so that the label sits on the top of the BoxLayout
+
+    BoxLayout:
+        id: navigation
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.10}
+        orientation: 'horizontal'
+        spacing: 20
+        padding: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        canvas.before:
+            Color:
+                rgba: (0, 0, 0, 0.3)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [15,]
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'OK'
+            post_text: 'to go back'
+            font_size: 30
+
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'EXIT'
+            post_text: 'to quit'
+            font_size: 30
+
+<Credits>
+    title_text: 'Credits'
+
+<Score>
+    title_text: 'Score'
+
+    Label:
+        id: score
+        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
+        markup: True
+        text: '[b]' + str(app.curr_score) + '[/b] / ' + str(app.curr_total_rounds)
+        font_size: sp(160)
+        font_name: 'LondrinaSolid-Regular'
+    Label:
+        id: verdict
+        pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+        text: app.curr_verdict
+        font_size: sp(125)
+        font_name: 'LondrinaSolid-Light'
+        text_size: root.width*0.8, None
+        halign: 'center'
+        size: self.texture_size
+        size_hint: None, None
+    PlayOrOptions:
+        id: press_ok
+        opacity: 0
+        auto_anim: False
+        pos_hint: {'center_x': 0.5, 'center_y': 0.15}

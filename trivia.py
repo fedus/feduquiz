@@ -4,6 +4,8 @@
 from kivy.network.urlrequest import UrlRequest
 from html import unescape
 
+from constants import TRIVIA_URL
+
 import json
 
 

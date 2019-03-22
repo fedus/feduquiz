@@ -4,11 +4,11 @@ This is a trivia app built with Kivy, and is supposed to be played on a televisi
 television's own remote control.
 
 On a Raspberry Pi, no special setup should be necessary, and HDMI-CEC signals are captured using the included
-cec_control.py ((c) by PulseEight) file. On other systems, it might be necessary to install adequate library or
+cec_control.py ((c) by PulseEight) file. On other systems, it might be necessary to install adequate libraries or
 third party tools. For instance, on an Udoo X86, the CEC kernel module provided by Udoo can be compiled and
 loaded. Only the keytable needs to be adapted in that case.
 
-Finally, the game can also be played on any normal device by using the keyboard. The letters R, B, Y and G can
+Finally, the game can also be played on any normal device using a standard keyboard. The letters R, B, Y and G can
 be used to press the RED, BLUE, YELLOW and GREEN buttons respectively.
 
 Some useful CLI options:

@@ -12,3 +12,89 @@
             y: self.scale
     canvas.after:
         PopMatrix:
+
+<AlphaWidget>
+    effects: [AlphaEffect(30)]
+    size_hint: None, None
+
+<RoundedBox>
+    spacing: 20
+    padding: 30
+
+    canvas.before:
+        Color:
+            rgba: (0, 0, 0, 0.3)
+
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [30,]
+
+<PlayOrOptions>
+    orientation: 'vertical'
+    size: self.minimum_size
+    size_hint: None, None
+
+    PressColor:
+        pos_hint: {'center_y': 0.5}
+        pre_text: '- Press'
+        butt_col: [0,0,0,1]
+        butt_text: 'OK'
+        post_text: 'for new game -'
+
+    PressColor:
+        pos_hint: {'center_y': 0.5}
+        pre_text: '- Press'
+        butt_col: [1,0,0,1]
+        butt_text: 'RED'
+        post_text: 'for  options -'
+
+<PressOK>
+    font_name: 'PressStart2P-Regular'
+    text: '- Press OK to play -'
+    font_size: 60
+
+<PressColor>
+    orientation: 'horizontal'
+    size: self.minimum_size
+    spacing: 20
+    pre_label: pre
+    size_hint: None, None
+    font_size: 40
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: pre
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.pre_text or ''
+        size_hint: None, None
+        size: self.texture_size
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: butt
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.butt_text or ''
+        size_hint: None, None
+        size: max(self.texture_size[0]+10, 170), self.texture_size[1]+10
+        #halign: 'left'
+
+        canvas.before:
+            Color:
+                rgba: root.butt_col or [1,1,1,1]
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [10,]
+
+    Label:
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        id: post
+        font_name: 'PressStart2P-Regular'
+        font_size: root.font_size or 40
+        text: root.post_text or ''
+        size_hint: None, None
+        size: self.texture_size
