@@ -1,0 +1,32 @@
+<Screen>:
+    canvas.before:
+        Color:
+            rgb: app.bg_col
+        Rectangle:
+            # self here refers to the widget i.e FloatLayout
+            pos: self.pos
+            size: self.size
+
+<TitleScreen>
+    MainTitle:
+        id: main_title
+        pos_hint: {'center_x': 0.5, 'center_y': 0.85}
+        text: root.title_text or ''
+        scale: 0
+
+<Intro>
+    MainTitle:
+        id: feduquiz_title
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        text: 'Feduquiz'
+        size_hint: None, None
+        size: self.texture_size
+        opacity: 0
+        scale: 0
+        outline_color: root.outline_col     # To be moved to MainTitle def and move anim in there.
+
+
+    PlayOrOptions:
+        id: press_ok
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}

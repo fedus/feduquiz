@@ -1,0 +1,14 @@
+<MainTitle>
+    font_name: 'LuckiestGuy-Regular'
+    font_size: 200
+    outline_width: 25
+    outline_color: 0,0,0,1
+
+    canvas.before:
+        PushMatrix:
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+    canvas.after:
+        PopMatrix:
