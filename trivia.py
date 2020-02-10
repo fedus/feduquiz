@@ -4,8 +4,6 @@
 from kivy.network.urlrequest import UrlRequest
 from html import unescape
 
-from constants import TRIVIA_URL
-
 import json
 
 
@@ -20,10 +18,10 @@ class Trivia:
         self.running = False
         self.use_sample_data = use_sample_data
 
-    def new_game(self, difficulty, category, amount, q_type, wait=False):
+    def new_game(self, api_url, difficulty, category, amount, q_type, wait=False):
         self.score = 0
         self.round = 0
-        self.fetch_new(difficulty, category, amount, q_type, wait=wait)
+        self.fetch_new(api_url, difficulty, category, amount, q_type, wait=wait)
 
     def get_current_round(self):
         return self.round + 1
@@ -38,6 +36,7 @@ class Trivia:
         if self.running:
             if result:
                 self.score += 1
+                print("CURRENT SCORE: {}".format(self.score))
             self.round += 1
             if self.round >= len(self.quiz_data):
                 self.running = False
@@ -45,14 +44,14 @@ class Trivia:
     def check_game(self):
         return self.running
 
-    def fetch_new(self, difficulty, category, amount, q_type, wait=False):
+    def fetch_new(self, api_url, difficulty, category, amount, q_type, wait=False):
         if self.use_sample_data:
             import json
             with open('./resources/sample_quiz_data.json') as f:
                 data = json.load(f)
             self.fetch_success(None, data)
         else:
-            base_url = TRIVIA_URL + '?'
+            base_url = api_url + '?'
             if difficulty is not '':
                 base_url += 'difficulty=' + str(difficulty) + '&'
             if category is not 0:

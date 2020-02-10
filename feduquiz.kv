@@ -559,5 +559,31 @@
             size: root.scroll_size if root.scroll_size else (100,100)
             #pos: alpha_widget.pos
 
+<Author>
+    author_lbl: author_lbl
+    orientation: 'horizontal'
+    size: self.minimum_size
+    size_hint: None, None
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: root.author_lbl.pos if root.author_lbl.pos else (0,0)
+            size: (root.author_lbl.width+30, root.author_lbl.height) if root.author_lbl.size else (0,0)
+            radius: [30,]
+
+    Label:
+        id: author_lbl
+        text: app.curr_author
+        font_size: sp(60)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size[0]*1.35, self.texture_size[1]
+        size_hint: None, None
+        pos_hint: {'center_y': 0.5}
+
 <Widget>
     auto_anim: True

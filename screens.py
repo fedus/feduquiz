@@ -203,12 +203,12 @@ class Game(Screen):
         if App.get_running_app().trivia.check_game():
             current_question = App.get_running_app().trivia.get_current_question()
             App.get_running_app().curr_question = current_question["question"]
+            App.get_running_app().curr_author = current_question["author"] if "author" in current_question else ''
             App.get_running_app().curr_type = current_question["type"]
             App.get_running_app().curr_difficulty = current_question["difficulty"]
             App.get_running_app().curr_category = current_question["category"]
             App.get_running_app().curr_correct = current_question["correct_answer"]
             App.get_running_app().curr_wrong = current_question["incorrect_answers"]
-            App.get_running_app().curr_score = App.get_running_app().trivia.score
             App.get_running_app().curr_round = App.get_running_app().trivia.get_current_round()
             App.get_running_app().curr_total_rounds = App.get_running_app().trivia.get_total_rounds()
             self.shuffle_btn_labels(App.get_running_app().curr_correct, App.get_running_app().curr_wrong)
@@ -256,6 +256,8 @@ class Game(Screen):
         # Reset positions of question label and input buttons
         self.q_reset_pos()
         self.ids.game_buttons.reset_pos()
+
+        App.get_running_app().curr_score = App.get_running_app().trivia.score
 
         if App.get_running_app().trivia.check_game():
             # Game is still running - next question

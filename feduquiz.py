@@ -31,7 +31,7 @@ from soundmachine import SoundMachine
 from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
-from constants import CEC_CMD_MAP, TRIVIA_URL, INSTRUCTION_TEXT
+from constants import CEC_CMD_MAP, INSTRUCTION_TEXT
 
 import json
 import sys
@@ -43,6 +43,19 @@ DISABLE_CEC = True if '--disable-cec' in sys.argv else False
 USE_SAMPLE_DATA = True if '--use-sample-data' in sys.argv else False
 SET_SIZE = True if '--set-size' in sys.argv else False
 
+# Backend settings
+
+BACKENDS = {
+    "opentdb": {
+        "url": "https://opentdb.com/api.php",
+        "categories": get_categories()
+
+    },
+    "feduquizdb": {
+        "url": "https://dillendapp.eu/feduquizdb/api/trivia",
+        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2]]
+    }
+}
 
 
 class GameButtons(Widget):
@@ -317,6 +330,10 @@ class Category(BoxLayout):
     scroll_size = ListProperty()
     spacer_width = NumericProperty()
 
+class Author(BoxLayout):
+    
+    author_lbl = ObjectProperty(rebind=True)
+
 class Feduquiz(App):
     title = 'Feduquiz'
 
@@ -325,6 +342,7 @@ class Feduquiz(App):
     trivia = Trivia(USE_SAMPLE_DATA)
 
     curr_question = StringProperty()
+    curr_author = StringProperty()
     curr_type = StringProperty()
     curr_difficulty = StringProperty()
     curr_category = StringProperty()
@@ -336,6 +354,7 @@ class Feduquiz(App):
     curr_total_rounds = NumericProperty(0)
     curr_verdict = StringProperty()
 
+    opt_api = StringProperty('opentdb')
     opt_difficulty = StringProperty('')
     opt_category = NumericProperty(0)
     opt_amount = NumericProperty(10)
@@ -343,12 +362,14 @@ class Feduquiz(App):
     opt_type = StringProperty('')
 
     categories = ListProperty([['All', 0]])
+    backends = ListProperty([["Open Trivia DB", "opentdb"],["Feduquiz DB", "feduquizdb"]])
     
     instruction_text = StringProperty(INSTRUCTION_TEXT)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.categories = get_categories()
+        self.bind(opt_api=self.update_categories)
         self.fps_event = Clock.schedule_interval(self.print_fps, 1/2.0)
         self.sm = None
         self.bg_anim = (Animation(bg_col=[1,0,0], duration=2) +
@@ -395,8 +416,11 @@ class Feduquiz(App):
         self.sm.add_widget(Credits(name='credits'))
         return self.sm
 
+    def update_categories(self, property, api):
+        self.categories = BACKENDS[api]["categories"]
+
     def load_game(self, anim=None, widget=None):
-        self.trivia.new_game(self.opt_difficulty, self.opt_category, self.opt_amount, self.opt_type)
+        self.trivia.new_game(BACKENDS[self.opt_api]["url"], self.opt_difficulty, self.opt_category, self.opt_amount, self.opt_type)
         Clock.schedule_once(self.check_switch_screen)
 
     def check_switch_screen(self, dt=None):

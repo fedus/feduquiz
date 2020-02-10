@@ -48,6 +48,11 @@
             text: 'Instructions'
             on_press: root.goto_func(partial(app.goto_screen, s_name='instructions'))
         OptionButton:
+            text: 'Trivia API'
+            multiple_choice: True
+            action_target: 'opt_api'
+            choices: app.backends if app.backends else [['Open Trivia DB', 0]]
+        OptionButton:
             text: 'Categories'
             multiple_choice: True
             action_target: 'opt_category'

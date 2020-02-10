@@ -16,8 +16,6 @@ CEC_CMD_MAP = {
     "EXIT": [">> 01:44:0d", 27],
 }
 
-TRIVIA_URL = 'https://opentdb.com/api.php'
-
 POSITIVES = [
     "Nice!",
     "Great!",
