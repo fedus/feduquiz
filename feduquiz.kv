@@ -479,16 +479,17 @@
     size_hint: None, None
 
     Difficulty:
+        pos_hint: {'top': 1}
         id: difficulty_widget
 
-
     Round:
+        pos_hint: {'top': 1}
         id: round_widget
 
-
-    Category:
-        id: category_widget
-        scroll_size: 500, round_widget.height
+    CategoryAuthorCombo:
+        pos_hint: {'top': 1}
+        id: category_combo
+        category_scroll_size: 500, round_widget.height
 
 <ScrollLabel>:
     Label:
@@ -563,7 +564,7 @@
     author_lbl: author_lbl
     orientation: 'horizontal'
     size: self.minimum_size
-    size_hint: None, None
+    size_hint: 0.85, None
 
     canvas.before:
 
@@ -572,18 +573,36 @@
             rgba: (190/255, 144/255, 212/255,1)
 
         RoundedRectangle:
-            pos: root.author_lbl.pos if root.author_lbl.pos else (0,0)
-            size: (root.author_lbl.width+30, root.author_lbl.height) if root.author_lbl.size else (0,0)
+            pos: root.author_lbl.pos if root.author_lbl else (0,0)
+            size: (root.author_lbl.width, root.author_lbl.height*2) if root.author_lbl else (0,0)
             radius: [30,]
 
     Label:
         id: author_lbl
-        text: app.curr_author
-        font_size: sp(60)
+        markup: True
+        font_size: sp(30)
         font_name: 'LondrinaSolid-Regular'
-        size: self.texture_size[0]*1.35, self.texture_size[1]
-        size_hint: None, None
+        height: self.texture_size[1]*1.1
+        size_hint: 1, None
         pos_hint: {'center_y': 0.5}
+
+<CategoryAuthorCombo>
+
+    width: category_widget.width
+    height: category_widget.height + author_widget.height
+    size_hint: None, None
+
+    Author:
+        id: author_widget
+        label_text: app.curr_author
+        secondary_position: 0.5, 0.3
+        primary_position: 0.5, 0
+        pos_hint: {'center_x': self.secondary_position[0], 'y': self.secondary_position[1]}
+
+    Category:
+        id: category_widget
+        pos_hint: { 'top': 1 }
+        scroll_size: root.category_scroll_size
 
 <Widget>
     auto_anim: True

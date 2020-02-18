@@ -10,7 +10,7 @@ from kivy.logger import Logger
 from kivy.clock import Clock, mainthread
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.button import Button
@@ -333,6 +333,66 @@ class Category(BoxLayout):
 class Author(BoxLayout):
     
     author_lbl = ObjectProperty(rebind=True)
+    secondary_position = ListProperty()
+    primary_position = ListProperty()
+    label_text = StringProperty()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.next_label_text = None
+
+    def on_label_text(self, widget, label_text):
+        """
+        The label to be displayed has changed, this means we want to animate out the currently
+        scrolling label and fade back in the label with the new text.
+        """
+        self.fade_out_animation()
+
+    def fade_out_animation(self):
+        """
+        Starts the fade out animation, but only if opacity is not already 0 (might happen if
+        this is the first time the label receives a text for example).
+        """
+        isHidden = lambda pos_hint: pos_hint['center_x'] == self.secondary_position[0] and pos_hint['y'] == self.secondary_position[1]
+
+        if isHidden(self.pos_hint):
+            self.fade_in_prep()
+        else:
+            anim_out = Animation(
+                pos_hint={'center_x': self.secondary_position[0],
+                          'y': self.secondary_position[1]},
+                t='in_back',
+                duration=0.5
+            )
+            anim_out.bind(on_complete=self.fade_in_prep)
+            anim_out.start(self)
+
+    def fade_in_prep(self, anim=None, widget=None):
+        """
+        This function gets called at the end of the fade out animation and prepares the
+        fade in animation, for example by actually setting the label's text to the desired value
+        and resetting positions etc.
+        At the end, we schedule the fade in for the next frame. We do it this way so the label's
+        properties are updated correctly (as we need its width).
+        """
+        self.ids.author_lbl.text = 'Asked by: [b]{}[/b]'.format(self.label_text)
+        Animation.cancel_all(self)
+        Clock.schedule_once(self.fade_in_animation)
+
+    def fade_in_animation(self, dt=None):
+        """
+        Starts the fade in animation.
+        """
+        Animation(
+            pos_hint={'center_x': self.primary_position[0],
+                      'y': self.primary_position[1]},
+            t='out_back',
+            duration=0.5
+        ).start(self)
+
+class CategoryAuthorCombo(RelativeLayout):
+    
+    category_scroll_size = ListProperty([0, 0])
 
 class Feduquiz(App):
     title = 'Feduquiz'
