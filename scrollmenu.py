@@ -172,18 +172,27 @@ class ScrollAwareLayout(BoxLayout):
 
 
 class OptionButton(ButtonBehavior, FocusBehavior, Label):
+    arrow_opacity_active = NumericProperty(1)
+    arrow_opacity_inactive = NumericProperty(0.3)
+
     scale = NumericProperty()
     arrow_left = ListProperty()
     arrow_right = ListProperty()
+    arrow_left_opacity = NumericProperty()
+    arrow_right_opacity = NumericProperty()
     multiple_choice = BooleanProperty()
-    show_arrow = BooleanProperty()
+    show_arrows = BooleanProperty()
     action_target = ObjectProperty()
     choices = ListProperty()
+    opt_index = NumericProperty(-1)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.arrow_left_opacity = self.arrow_opacity_inactive
+        self.arrow_right_opacity = self.arrow_opacity_active
         self.focus_anim = Animation()
-        self.opt_index = -1
+        self.left_arrow_anim = Animation()
+        self.right_arrow_anim = Animation()
         self.original_text = None
 
     def on_focus(self, widget=None, focus=None):
@@ -205,10 +214,24 @@ class OptionButton(ButtonBehavior, FocusBehavior, Label):
     def set_rand_outline(self):
         self.outline_color = [randint(0, 9) / 10 for x in range(3)]
 
+    def on_opt_index(self, widget, new_index):
+        if self.opt_index < 0:
+            return
+        if self.opt_index == 0:
+            self.left_arrow_anim = Animation(arrow_left_opacity=self.arrow_opacity_inactive, duration=0.2)
+        elif self.opt_index > 0:
+            self.left_arrow_anim = Animation(arrow_left_opacity=self.arrow_opacity_active, duration=0.2)
+        if self.opt_index == len(self.choices)-1:
+            self.right_arrow_anim = Animation(arrow_right_opacity=self.arrow_opacity_inactive, duration=0.2)
+        elif self.opt_index < len(self.choices)-1:
+            self.right_arrow_anim = Animation(arrow_right_opacity=self.arrow_opacity_active, duration=0.2)
+        self.left_arrow_anim.start(self)
+        self.right_arrow_anim.start(self)
+
     def on_press(self, *args, **kwargs):
         super().on_press(*args, **kwargs)
-        if self.multiple_choice and not self.show_arrow:
-            self.show_arrow = True
+        if self.multiple_choice and not self.show_arrows:
+            self.show_arrows = True
             curr_option_value = getattr(App.get_running_app(), self.action_target)
             if self.opt_index < 0:
                 self.original_text = self.text
@@ -219,8 +242,8 @@ class OptionButton(ButtonBehavior, FocusBehavior, Label):
                         break
             self.text = self.choices[self.opt_index][0]
             App.get_running_app().snd_machine.btn_mov()
-        elif self.multiple_choice and self.show_arrow:
-            self.show_arrow = False
+        elif self.multiple_choice and self.show_arrows:
+            self.show_arrows = False
             self.close_choices()
             App.get_running_app().snd_machine.btn_sel()
 
@@ -230,7 +253,7 @@ class OptionButton(ButtonBehavior, FocusBehavior, Label):
             self.text = self.original_text
 
     def option_prev(self):
-        if self.show_arrow:
+        if self.show_arrows:
             App.get_running_app().snd_machine.btn_mov()
             if self.opt_index > 0:
                 self.opt_index -= 1
@@ -238,7 +261,7 @@ class OptionButton(ButtonBehavior, FocusBehavior, Label):
             self.option_set()
 
     def option_next(self):
-        if self.show_arrow:
+        if self.show_arrows:
             App.get_running_app().snd_machine.btn_mov()
             if self.opt_index < len(self.choices) - 1:
                 self.opt_index += 1

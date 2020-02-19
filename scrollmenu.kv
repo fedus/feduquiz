@@ -86,29 +86,32 @@
     scale: 1
     multiple_choice: False
 
-    show_arrow: False
+    show_arrows: False
     outline_width: 10 if self.focus else 0
     arrow_left: self.x+30, self.center_y+20, self.x+10, self.center_y, self.x+30, self.center_y-20
     arrow_right: self.right-30, self.center_y+20, self.right-10, self.center_y, self.right-30, self.center_y-20
 
 
     on_focus:
-        if not self.focus: setattr(self, 'show_arrow', False)
+        if not self.focus: setattr(self, 'show_arrows', False)
 
     canvas.before:
 
         Color:
-            rgb: 1, 1, 1
+            rgba: 1, 1, 1, self.arrow_left_opacity
 
         Line:
-            points: self.arrow_left if self.show_arrow else []
+            points: self.arrow_left if self.show_arrows else []
             cap: 'round'
             joint: 'round'
             close: False
             width: 10
 
+        Color:
+            rgba: 1, 1, 1, self.arrow_right_opacity
+
         Line:
-            points: self.arrow_right if self.show_arrow else []
+            points: self.arrow_right if self.show_arrows else []
             cap: 'round'
             joint: 'round'
             close: False
