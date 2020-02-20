@@ -375,6 +375,8 @@ class Author(BoxLayout):
         At the end, we schedule the fade in for the next frame. We do it this way so the label's
         properties are updated correctly (as we need its width).
         """
+        if self.label_text == '':
+            return
         self.ids.author_lbl.text = 'Asked by: [b]{}[/b]'.format(self.label_text)
         Animation.cancel_all(self)
         Clock.schedule_once(self.fade_in_animation)

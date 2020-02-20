@@ -574,7 +574,7 @@
 
         RoundedRectangle:
             pos: root.author_lbl.pos if root.author_lbl else (0,0)
-            size: (root.author_lbl.width, root.author_lbl.height*2) if root.author_lbl else (0,0)
+            size: (root.author_lbl.width, root.author_lbl.height*1.5) if root.author_lbl else (0,0)
             radius: [30,]
 
     Label:
@@ -589,13 +589,13 @@
 <CategoryAuthorCombo>
 
     width: category_widget.width
-    height: category_widget.height + author_widget.height
+    height: category_widget.height + (author_widget.height * 0.9)
     size_hint: None, None
 
     Author:
         id: author_widget
         label_text: app.curr_author
-        secondary_position: 0.5, 0.3
+        secondary_position: 0.5, 0.35
         primary_position: 0.5, 0
         pos_hint: {'center_x': self.secondary_position[0], 'y': self.secondary_position[1]}
 

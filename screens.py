@@ -269,6 +269,7 @@ class Game(Screen):
             self.buttons_active = True
         else:
             # Game has ended - move to highscores
+            App.get_running_app().curr_author = '' # We want the author label to hide for the next game
             App.get_running_app().curr_verdict = get_verdict(App.get_running_app().curr_score / App.get_running_app().curr_total_rounds)
             self.gi_anim("out")
             Clock.schedule_once(self.goto_score, 1)
