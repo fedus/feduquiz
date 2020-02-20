@@ -31,7 +31,7 @@ from soundmachine import SoundMachine
 from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
-from constants import CEC_CMD_MAP, INSTRUCTION_TEXT
+from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, SECS_PER_QUESTION
 
 import json
 import sys
@@ -396,6 +396,48 @@ class CategoryAuthorCombo(RelativeLayout):
     
     category_scroll_size = ListProperty([0, 0])
 
+class TimerBar(Widget):
+    
+    current_percentage = NumericProperty(0)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.running = False
+        self.seconds = 0
+        self.bar_animation = Animation()
+        self.callback = None
+
+    def start_timer(self, rounds, callback=None, reset=True):
+        """
+        (Re)starts the timer
+        """
+        if reset:
+            self.reset_timer()
+        self.callback = callback
+        self.seconds = SECS_PER_QUESTION * rounds
+        self.bar_animation.cancel(self)
+        self.running = True
+        self.bar_animation = Animation(current_percentage=1, duration=0.5)
+        self.bar_animation.bind(on_complete=self.run_timer)
+        self.bar_animation.start(self)
+
+    def run_timer(self, anim=None, widget=None):
+        self.bar_animation = Animation(current_percentage=0, duration=self.seconds)
+        self.bar_animation.bind(on_complete=self.reset_running)
+        self.bar_animation.start(self)
+
+    def halt_timer(self):
+        self.bar_animation.cancel(self)
+
+    def reset_running(self, anim=None, widget=None):
+        self.running = False
+        if self.callback:
+            self.callback()
+
+    def reset_timer(self):
+        self.bar_animation.cancel(self)
+        self.current_percentage = 0
+
 class Feduquiz(App):
     title = 'Feduquiz'
 
@@ -421,6 +463,7 @@ class Feduquiz(App):
     opt_category = NumericProperty(0)
     opt_amount = NumericProperty(10)
     opt_instant_fb = BooleanProperty(True)
+    opt_timer = BooleanProperty(True)
     opt_type = StringProperty('')
 
     categories = ListProperty([['All', 0]])

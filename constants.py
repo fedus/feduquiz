@@ -39,3 +39,5 @@ NEGATIVES = [
 INSTRUCTION_TEXT = """Use the buttons on your television's remote control to control the game. In the menus, the relevant buttons will be indicated at the bottom of the screen. During the game, answers are given using the coloured buttons.
 Use the options menu to adapt the categories, difficulty, number of questions, etc. to your liking. You can also enable or disable functions like instant feedback or the timer.
 For multiplayer mode, players have to scan the QR code on the screen and be in the same WiFi or LAN than the machine running the quiz. Players can then respond to questions on their mobile phone."""
+
+SECS_PER_QUESTION = 7.75

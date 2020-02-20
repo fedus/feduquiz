@@ -473,23 +473,36 @@
         PopMatrix:
 
 <GameInfo>
-    orientation: 'horizontal'
-    spacing: 50
+    orientation: 'vertical'
+    spacing: 20 if app.opt_timer else 70 # Keep the child boxlayout at same pos no matter if TimerBar is visible or not
     size: self.minimum_size
-    size_hint: None, None
+    size_hint: 1, None
 
-    Difficulty:
-        pos_hint: {'top': 1}
-        id: difficulty_widget
+    TimerBar:
+        id: timer_bar
+        height: 50 if app.opt_timer else 0      # Show/hide without scripting in .py
+        pos_hint: {'center_x': 0.5, 'top': 1}
 
-    Round:
-        pos_hint: {'top': 1}
-        id: round_widget
+    BoxLayout:
 
-    CategoryAuthorCombo:
-        pos_hint: {'top': 1}
-        id: category_combo
-        category_scroll_size: 500, round_widget.height
+        orientation: 'horizontal'
+        spacing: 50
+        size: self.minimum_size
+        size_hint: None, None
+        pos_hint: { 'center_x': 0.5 }
+
+        Difficulty:
+            pos_hint: {'top': 1}
+            id: difficulty_widget
+
+        Round:
+            pos_hint: {'top': 1}
+            id: round_widget
+
+        CategoryAuthorCombo:
+            pos_hint: {'top': 1}
+            id: category_combo
+            category_scroll_size: 500, round_widget.height
 
 <ScrollLabel>:
     Label:
@@ -603,6 +616,42 @@
         id: category_widget
         pos_hint: { 'top': 1 }
         scroll_size: root.category_scroll_size
+
+<TimerBar>
+
+    size_hint_y: None
+    size_hint_x: 0.95
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: self.pos
+            size: (self.width, self.height * 1.7)
+            radius: [30,]
+
+        StencilPush
+
+        Rectangle:
+            pos: (self.x+5, self.y+5)
+            size: ((self.width-10) * root.current_percentage, self.height * 1.7)
+        
+        StencilUse
+
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        RoundedRectangle:
+            pos: (self.x+5, self.y+5)
+            size: (self.width-10, self.height * 1.7)
+            radius: [30,]
+        
+        StencilUnUse
+
+        StencilPop
 
 <Widget>
     auto_anim: True

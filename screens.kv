@@ -73,6 +73,11 @@
             action_target: 'opt_amount'
             choices: [[str(x), x] for x in range(5, 30, 5)]
         OptionButton:
+            text: 'Timer'
+            multiple_choice: True
+            action_target: 'opt_timer'
+            choices: [['On', True], ['Off', False]]
+        OptionButton:
             text: 'Instant feedback'
             multiple_choice: True
             action_target: 'opt_instant_fb'
@@ -128,7 +133,7 @@
     GameInfo:
         id: info_widget
         secondary_position: 0.5, 1.2
-        primary_position: 0.5, 0.95
+        primary_position: (0.5, 1)
         pos_hint: {'center_x': self.secondary_position[0], 'top': self.secondary_position[1]}
     QuestionLabel:
         id: question_label

@@ -231,6 +231,17 @@ class Game(Screen):
             self.last_button_color = color
             self.start_answer_sequence()
 
+    def timeout_sequence(self):
+        self.buttons_active = False
+        self.q_anim("out")
+
+        App.get_running_app().trivia.cancel_game('timeout')
+
+        self.ids.negative_label.text = 'Too late!'
+        Clock.schedule_once(lambda dt: self.ids.negative_label.animate(), 0.5)
+
+        self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=self.end_answer_sequence)
+
     def start_answer_sequence(self):
         self.buttons_active = False
         self.q_anim("out")
@@ -238,11 +249,13 @@ class Game(Screen):
 
         if self.answer == App.get_running_app().curr_correct:
             print("CORRECT ANSWER")
+            sound_feedback = 'correct'
             feedback_msg = choice(POSITIVES)
             feedback_lbl = self.ids.positive_label
             App.get_running_app().trivia.register_answer(True)
         else:
             print("WRONG ANSWER")
+            sound_feedback = 'wrong'
             feedback_msg = choice(NEGATIVES)
             feedback_lbl = self.ids.negative_label
             App.get_running_app().trivia.register_answer(False)
@@ -251,6 +264,10 @@ class Game(Screen):
         feedback_lbl.text = feedback_msg
         if App.get_running_app().opt_instant_fb:
             Clock.schedule_once(lambda dt: feedback_lbl.animate(), 0.3)
+        else:
+            sound_feedback = 'neutral'
+
+        App.get_running_app().snd_machine.btn_answer(sound_feedback)
 
     def end_answer_sequence(self):
         # Reset positions of question label and input buttons
@@ -310,6 +327,8 @@ class Game(Screen):
                 opacity=1,
                 t='out_elastic',
                 duration=0.5)
+            if App.get_running_app().opt_timer:
+                self.ids.info_widget.ids.timer_bar.start_timer(App.get_running_app().curr_total_rounds, self.timeout_sequence)
         else:
             anim = Animation(
                 pos_hint={'center_x': self.ids.info_widget.secondary_position[0],
@@ -317,6 +336,8 @@ class Game(Screen):
                 opacity=0,
                 t='in_back',
                 duration=0.5)
+            if App.get_running_app().opt_timer:
+                self.ids.info_widget.ids.timer_bar.halt_timer()
         anim.start(self.ids.info_widget)
 
 class Score(TitleScreen):

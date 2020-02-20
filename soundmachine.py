@@ -14,6 +14,11 @@ class SoundMachine:
         self.snd_btn_mov = SoundLoader.load('resources/sfx_menu_move4.wav')
         self.snd_game = SoundLoader.load('resources/fast_level.wav')
         self.snd_menu = SoundLoader.load('resources/elevator.ogg')
+        self.snd_answer = {
+            'correct': SoundLoader.load('resources/correct.wav'),
+            'wrong': SoundLoader.load('resources/wrong.wav'),
+            'neutral': SoundLoader.load('resources/neutral.wav')
+        }
 
     def btn_sel(self):
         """Sound to play for an OptionButton selection."""
@@ -22,6 +27,9 @@ class SoundMachine:
     def btn_mov(self):
         """Sound to play for an OptionButton movement."""
         self.proxy(self.snd_btn_mov, "play")
+
+    def btn_answer(self, result='neutral'):
+        self.proxy(self.snd_answer.get(result), "play")
 
     def mode_menu(self):
         """Switch background music to menu mode."""

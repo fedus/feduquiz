@@ -16,6 +16,7 @@ class Trivia:
         self.score = 0
         self.round = 0
         self.running = False
+        self.cancel_reason = None
         self.use_sample_data = use_sample_data
 
     def new_game(self, api_url, difficulty, category, amount, q_type, wait=False):
@@ -43,6 +44,10 @@ class Trivia:
 
     def check_game(self):
         return self.running
+
+    def cancel_game(self, reason=None):
+        self.running = False
+        self.cancel_reason = reason
 
     def fetch_new(self, api_url, difficulty, category, amount, q_type, wait=False):
         if self.use_sample_data:
