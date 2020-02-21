@@ -241,6 +241,7 @@ class Game(Screen):
         Clock.schedule_once(lambda dt: self.ids.negative_label.animate(), 0.5)
 
         self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=self.end_answer_sequence)
+        App.get_running_app().snd_machine.mode_game(False)
 
     def start_answer_sequence(self):
         self.buttons_active = False

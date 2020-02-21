@@ -40,4 +40,5 @@ INSTRUCTION_TEXT = """Use the buttons on your television's remote control to con
 Use the options menu to adapt the categories, difficulty, number of questions, etc. to your liking. You can also enable or disable functions like instant feedback or the timer.
 For multiplayer mode, players have to scan the QR code on the screen and be in the same WiFi or LAN than the machine running the quiz. Players can then respond to questions on their mobile phone."""
 
-SECS_PER_QUESTION = 7.75
+SECS_PER_QUESTION = 7.5
+TIMER_WARNING = 0.2

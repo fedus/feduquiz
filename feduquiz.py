@@ -21,7 +21,7 @@ from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.properties import NumericProperty, ListProperty, StringProperty, BooleanProperty, ObjectProperty, DictProperty
 
-
+from enum import Enum
 from random import shuffle, choice, randint
 from functools import partial
 
@@ -31,7 +31,7 @@ from soundmachine import SoundMachine
 from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
-from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, SECS_PER_QUESTION
+from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, SECS_PER_QUESTION, TIMER_WARNING
 
 import json
 import sys
@@ -396,9 +396,15 @@ class CategoryAuthorCombo(RelativeLayout):
     
     category_scroll_size = ListProperty([0, 0])
 
+class TimerStates(Enum):
+    OK = 1
+    WARN = 2
+    LAPSED = 3
+
 class TimerBar(Widget):
-    
+
     current_percentage = NumericProperty(0)
+    current_state = ObjectProperty(TimerStates.LAPSED)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -406,6 +412,20 @@ class TimerBar(Widget):
         self.seconds = 0
         self.bar_animation = Animation()
         self.callback = None
+        self.resetting = False
+
+    def on_current_percentage(self, widget, new_percentage):
+        if self.resetting or new_percentage > TIMER_WARNING:
+            self.current_state = TimerStates.OK
+        elif 0 < new_percentage <= TIMER_WARNING:
+            self.current_state = TimerStates.WARN
+        else:
+            self.current_state = TimerStates.LAPSED
+
+    def on_current_state(self, widget, new_state):
+        App.get_running_app().snd_machine.timer_tick_tock(new_state == TimerStates.WARN)
+        if new_state == TimerStates.LAPSED:
+            App.get_running_app().snd_machine.timer_timeout()
 
     def start_timer(self, rounds, callback=None, reset=True):
         """
@@ -417,11 +437,13 @@ class TimerBar(Widget):
         self.seconds = SECS_PER_QUESTION * rounds
         self.bar_animation.cancel(self)
         self.running = True
+        self.resetting = True
         self.bar_animation = Animation(current_percentage=1, duration=0.5)
         self.bar_animation.bind(on_complete=self.run_timer)
         self.bar_animation.start(self)
 
     def run_timer(self, anim=None, widget=None):
+        self.resetting = False
         self.bar_animation = Animation(current_percentage=0, duration=self.seconds)
         self.bar_animation.bind(on_complete=self.reset_running)
         self.bar_animation.start(self)
