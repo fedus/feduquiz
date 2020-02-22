@@ -16,9 +16,9 @@ class SoundMachine:
         self.snd_btn_mov.volume = 0.2
         self.snd_game = SoundLoader.load('resources/fast_level.wav')
         self.snd_game.volume = 0.2
-        self.snd_menu = SoundLoader.load('resources/elevator.ogg')
+        self.snd_menu = SoundLoader.load('resources/elevator.wav')
         self.snd_menu.volume = 0.2
-        self.snd_tick_tock = SoundLoader.load('resources/tick_tock.ogg')
+        self.snd_tick_tock = SoundLoader.load('resources/tick_tock.wav')
         self.snd_tick_tock.loop = True
         self.snd_timeout = SoundLoader.load('resources/timeout.wav')
         self.snd_answer = {
