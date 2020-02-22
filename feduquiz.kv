@@ -624,6 +624,16 @@
 
     canvas.before:
 
+        Color:
+            rgba: self.warn_bg_col
+
+        RoundedRectangle:
+            pos: (self.x-10, self.y-10)
+            size: (self.width+20, self.height * 1.7)
+            radius: [30,]
+
+    canvas:
+
         # Background shapes
         Color:
             rgba: (190/255, 144/255, 212/255,1)
@@ -642,7 +652,7 @@
         StencilUse
 
         Color:
-            rgba: (150/255, 54/255, 148/255,1)
+            rgba: self.bar_col
 
         RoundedRectangle:
             pos: (self.x+5, self.y+5)
@@ -650,6 +660,10 @@
             radius: [30,]
         
         StencilUnUse
+
+        Rectangle:
+            pos: (self.x+5, self.y+5)
+            size: ((self.width-10) * root.current_percentage, self.height * 1.7)
 
         StencilPop
 

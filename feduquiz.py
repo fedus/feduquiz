@@ -405,12 +405,17 @@ class TimerBar(Widget):
 
     current_percentage = NumericProperty(0)
     current_state = ObjectProperty(TimerStates.LAPSED)
+    bar_col = ListProperty([150/255, 54/255, 148/255,1])
+    warn_bg_col = ListProperty([1, 0, 0, 0])
+    warn_scale = NumericProperty(1)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.running = False
         self.seconds = 0
         self.bar_animation = Animation()
+        self.bar_color_animation = Animation()
+        self.warn_animation = Animation()
         self.callback = None
         self.resetting = False
 
@@ -424,7 +429,22 @@ class TimerBar(Widget):
 
     def on_current_state(self, widget, new_state):
         App.get_running_app().snd_machine.timer_tick_tock(new_state == TimerStates.WARN)
+        if new_state == TimerStates.WARN:
+            self.warn_animation = (
+                Animation(warn_bg_col=[1, 0, 0, 1], warn_scale=3, duration=1)
+                + Animation(warn_bg_col=[1, 0, 0, 0], warn_scale=6, duration=1)
+            )
+            self.bar_color_animation = (
+                Animation(bar_col=[1, 0, 0, 1], duration=0.5)
+                + Animation(bar_col=[150/255, 54/255, 148/255,1], duration=0.5)
+            )
+            self.warn_animation.repeat = True
+            self.bar_color_animation.repeat = True
+            self.warn_animation.start(self)
+            self.bar_color_animation.start(self)
         if new_state == TimerStates.LAPSED:
+            self.warn_animation.repeat = False
+            self.bar_color_animation.repeat = False
             App.get_running_app().snd_machine.timer_timeout()
 
     def start_timer(self, rounds, callback=None, reset=True):
