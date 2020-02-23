@@ -397,9 +397,10 @@ class CategoryAuthorCombo(RelativeLayout):
     category_scroll_size = ListProperty([0, 0])
 
 class TimerStates(Enum):
-    OK = 1
+    RUNNING = 1
     WARN = 2
     LAPSED = 3
+    STOPPED = 4
 
 class TimerBar(Widget):
 
@@ -420,8 +421,10 @@ class TimerBar(Widget):
         self.resetting = False
 
     def on_current_percentage(self, widget, new_percentage):
-        if self.resetting or new_percentage > TIMER_WARNING:
-            self.current_state = TimerStates.OK
+        if not self.running:
+            self.current_state = TimerStates.STOPPED
+        elif self.resetting or new_percentage > TIMER_WARNING:
+            self.current_state = TimerStates.RUNNING
         elif 0 < new_percentage <= TIMER_WARNING:
             self.current_state = TimerStates.WARN
         else:
@@ -442,22 +445,23 @@ class TimerBar(Widget):
             self.bar_color_animation.repeat = True
             self.warn_animation.start(self)
             self.bar_color_animation.start(self)
-        if new_state == TimerStates.LAPSED:
+        elif new_state == TimerStates.LAPSED or TimerStates.STOPPED:
             self.warn_animation.repeat = False
             self.bar_color_animation.repeat = False
-            App.get_running_app().snd_machine.timer_timeout()
+            if new_state == TimerStates.LAPSED:
+                App.get_running_app().snd_machine.timer_timeout()
 
     def start_timer(self, rounds, callback=None, reset=True):
         """
         (Re)starts the timer
         """
+        self.running = True
+        self.resetting = True
         if reset:
             self.reset_timer()
         self.callback = callback
         self.seconds = SECS_PER_QUESTION * rounds
         self.bar_animation.cancel(self)
-        self.running = True
-        self.resetting = True
         self.bar_animation = Animation(current_percentage=1, duration=0.5)
         self.bar_animation.bind(on_complete=self.run_timer)
         self.bar_animation.start(self)
@@ -469,10 +473,13 @@ class TimerBar(Widget):
         self.bar_animation.start(self)
 
     def halt_timer(self):
-        self.bar_animation.cancel(self)
+        if self.current_state is not TimerStates.LAPSED:
+            self.bar_animation.cancel(self)
+            self.current_state = TimerStates.STOPPED
 
     def reset_running(self, anim=None, widget=None):
         self.running = False
+        self.current_state = TimerStates.LAPSED
         if self.callback:
             self.callback()
 
