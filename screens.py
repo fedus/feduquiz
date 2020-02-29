@@ -198,7 +198,7 @@ class Game(Screen):
         self.last_button_color = None
 
         self.ids.info_widget.ids.timer_bar.link_timer(self.trivia.timer)
-        self.trivia.bind(on_timedout=lambda widget: self.timeout_sequence())
+        self.trivia.bind(on_timedout_answer=lambda widget: self.timeout_sequence())
         self.trivia.bind(on_answer=lambda widget, answer_colour, real_answer, from_button: self.button_press(answer_colour, from_button))
         self.trivia.bind(round=lambda widget, round_number: self.next_round_sequence(round_number))
         self.trivia.bind(on_correct_answer=lambda widget, answer_colour, real_answer, from_button: self.answer_sequence('correct'))
@@ -221,13 +221,8 @@ class Game(Screen):
         self.last_button_color = color
 
     def timeout_sequence(self):
-        self.q_anim("out")
-
         self.ids.negative_label.text = 'Too late!'
         Clock.schedule_once(lambda dt: self.ids.negative_label.animate(), 0.5)
-
-        self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=lambda: self.anim_out(True))
-        App.get_running_app().snd_machine.mode_game(False)
 
     def answer_sequence(self, answer_result):
         """Animates the answer feedback label."""

@@ -39,15 +39,15 @@ class Timer(EventDispatcher):
         """
         (Re)starts the timer
         """
-        print('Starting timer ...')
-        self.running = True
-        self.resetting = True
+        print('Starting timer ... {} seconds, callback {}, windup {}, reset {}'.format(seconds, callback, windup, reset))
         if reset:
             self.reset_timer()
+        self.running = True
+        self.resetting = True
         self.callback = callback
         self.seconds = seconds
         self.timer_animation.cancel(self)
-        duration = 0.5 if windup else 0
+        duration = 1 if windup else 0
         self.timer_animation = Animation(current_percentage=1, duration=duration)
         self.timer_animation.bind(on_complete=self.run_timer)
         self.timer_animation.start(self)
@@ -70,5 +70,6 @@ class Timer(EventDispatcher):
             self.callback()
 
     def reset_timer(self):
+        self.running = False
         self.timer_animation.cancel(self)
         self.current_percentage = 0

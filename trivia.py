@@ -119,7 +119,6 @@ class TriviaStates(Enum):
     READY = 3
     RUNNING = 4
     FINISHED = 5
-    TIMEDOUT = 6
     CANCELLED = 7
 
 class Trivia(EventDispatcher):
@@ -148,7 +147,6 @@ class Trivia(EventDispatcher):
         self.register_event_type('on_ready')
         self.register_event_type('on_running')
         self.register_event_type('on_finished')
-        self.register_event_type('on_timedout')
         self.register_event_type('on_cancelled')
         # Convenience events
         self.register_event_type('on_ended')
@@ -156,6 +154,7 @@ class Trivia(EventDispatcher):
         self.register_event_type('on_illegal_join')
         self.register_event_type('on_correct_answer')
         self.register_event_type('on_incorrect_answer')
+        self.register_event_type('on_timedout_answer')
         self.register_event_type('on_answer')
         self.register_event_type('on_all_answers')
         self.req = None
@@ -180,15 +179,10 @@ class Trivia(EventDispatcher):
 
     def on_running(self):
         """Event handler for game start."""
-        self.toggle_timer()
         App.get_running_app().goto_screen(s_name='game', menu_mode=False)
 
     def on_finished(self):
         """Event handler for game finish."""
-        self.dispatch('on_ended')
-
-    def on_timedout(self):
-        """Event handler for game end due to time out."""
         self.dispatch('on_ended')
 
     def on_cancelled(self):
@@ -221,6 +215,10 @@ class Trivia(EventDispatcher):
         """Event handler an incorrect answer by any player."""
         self.dispatch('on_answer', answer_colour, real_answer, from_button)
 
+    def on_timedout_answer(self):
+        """Event handler for answer timeout (at least 1 player has not answered)."""
+        self.answer_timeout()
+
     def on_all_answers(self):
         """Event handler for change in players list."""
         self.transitioning = True
@@ -230,15 +228,18 @@ class Trivia(EventDispatcher):
         """Event handler for change in players list."""
         self.player_count = len(new_players)
 
-    def toggle_timer(self, start=True):
+    def toggle_timer(self, start=True, reset=True):
         if start and App.get_running_app().opt_timer:
-            self.timer.start_timer(self.total_rounds * SECS_PER_QUESTION, self.on_timeout)
+            self.timer.start_timer(SECS_PER_QUESTION, lambda: self.dispatch('on_timedout_answer'), windup=True, reset=reset)
         if not start and App.get_running_app().opt_timer:
             self.timer.halt_timer()
 
     def on_round(self, widget, new_round):
         """Advance current question."""
         if 1 <= new_round <= len(self.all_questions):
+            if new_round == 1:
+                self.timer.reset_timer()
+            self.toggle_timer(start=True, reset=False)
             self.current_question = self.all_questions[new_round - 1]
 
     def on_timeout(self):
@@ -299,10 +300,10 @@ class Trivia(EventDispatcher):
             self.current_state = TriviaStates.FETCHING
             Clock.schedule_once(self.start_game)
         else:
+            self.current_state = TriviaStates.RUNNING
             self.game_number = 1
             self.score = 0
             self.round = 1
-            self.current_state = TriviaStates.RUNNING
 
     def next_round(self):
         if self.current_state == TriviaStates.RUNNING:
@@ -340,6 +341,7 @@ class Trivia(EventDispatcher):
             players_without_answer = self.get_players_without_answer()
             for player in players_without_answer:
                 player.timed_out()
+            Clock.schedule_once(lambda dt: self.conditional_dispatch_all_answered())
 
     def conditional_dispatch_all_answered(self):
         """Checks if all answers have been provided. If so, dispatches corresponding event."""
