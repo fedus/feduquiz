@@ -5,13 +5,14 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.animation import Animation
 from kivy.uix.screenmanager import Screen
-from kivy.properties import ListProperty, StringProperty
+from kivy.properties import ListProperty, StringProperty, ObjectProperty
 
-from random import shuffle, choice
+from random import choice
 from functools import partial
 
 from helpers import get_verdict
 from simple_widgets import MainTitle
+from trivia import TriviaStates
 from constants import CEC_CMD_MAP, NEGATIVES, POSITIVES
 
 import sys
@@ -36,9 +37,12 @@ class TitleScreen(Screen):
         to method "start_secondary_anims". The latter will then fade in the rest of the
         widgets one by one.
         """
-        anim = Animation(scale=1, opacity=1, t='out_elastic', duration=1)
-        anim.bind(on_complete=partial(self.start_secondary_anims, direction='in'))
-        anim.start(self.ids.main_title)
+        if self.title_text:
+            anim = Animation(scale=1, opacity=1, t='out_elastic', duration=1)
+            anim.bind(on_complete=partial(self.start_secondary_anims, direction='in'))
+            anim.start(self.ids.main_title)
+        else:
+            self.start_secondary_anims(None, None, direction='in')
         
     def start_secondary_anims(self, anim, widget, direction):
         """
@@ -79,7 +83,7 @@ class TitleScreen(Screen):
         The latter is a method which should result in a screen switch.
         """
         next_delay = self.start_secondary_anims(None, None, direction='out')
-        Clock.schedule_once(func, next_delay+0.1)
+        Clock.schedule_once(lambda dt: func(), next_delay+0.1)
 
 class Intro(Screen):
 
@@ -141,7 +145,7 @@ class Intro(Screen):
         anim1 = Animation(opacity=0)
         anim2 = Animation(opacity=0)
         if screen == "game":
-            anim2.bind(on_complete=App.get_running_app().load_game)
+            anim2.bind(on_complete=lambda widget, anim: App.get_running_app().trivia.new_game())
         if screen == "options":
             anim2.bind(on_complete=partial(self.set_screen, "options"))
         anim1.start(self.ids.feduquiz_title)
@@ -169,15 +173,17 @@ class Instructions(TitleScreen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "instructions", partial(self.goto_func, partial(App.get_running_app().goto_screen, s_name='options')))
+        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "instructions", partial(App.get_running_app().goto_screen, s_name='options'))
 
 class Credits(TitleScreen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "credits", partial(self.goto_func, partial(App.get_running_app().goto_screen, s_name='options')))
+        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "credits", partial(App.get_running_app().goto_screen, s_name='options'))
 
 class Game(Screen):
+
+    trivia = ObjectProperty(rebind=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -187,79 +193,54 @@ class Game(Screen):
         App.get_running_app().add_callback(CEC_CMD_MAP["BLUE"], "game", lambda: self.ids.game_buttons.ids.btn_blue.trigger_action(duration=.1))
 
         self.btn_pressed_anim = Animation(scale=1.1, duration=0.1) + Animation(scale=1, duration=0.1)
+        self.last_q_anim_direction = None
 
-        self.answer = None
-        self.buttons_active = False
         self.last_button_color = None
 
+        self.ids.info_widget.ids.timer_bar.link_timer(self.trivia.timer)
+        self.trivia.bind(on_timedout=lambda widget: self.timeout_sequence())
+        self.trivia.bind(on_answer=lambda widget, answer_colour, real_answer, from_button: self.button_press(answer_colour, from_button))
+        self.trivia.bind(round=lambda widget, round_number: self.next_round_sequence(round_number))
+        self.trivia.bind(on_correct_answer=lambda widget, answer_colour, real_answer, from_button: self.answer_sequence('correct'))
+        self.trivia.bind(on_incorrect_answer=lambda widget, answer_colour, real_answer, from_button: self.answer_sequence('incorrect'))
+        self.trivia.bind(on_ended=lambda widget: self.anim_out(True))
+
     def on_enter(self, *args):
-        self.load_current_question()
+        App.get_running_app().snd_machine.mode_game()
         self.gi_anim("in")
         self.q_anim("in")
         self.ids.game_buttons.anim_all("in")
-        self.buttons_active = True
 
-    def load_current_question(self):
-        if App.get_running_app().trivia.check_game():
-            current_question = App.get_running_app().trivia.get_current_question()
-            App.get_running_app().curr_question = current_question["question"]
-            App.get_running_app().curr_author = current_question["author"] if "author" in current_question else ''
-            App.get_running_app().curr_type = current_question["type"]
-            App.get_running_app().curr_difficulty = current_question["difficulty"]
-            App.get_running_app().curr_category = current_question["category"]
-            App.get_running_app().curr_correct = current_question["correct_answer"]
-            App.get_running_app().curr_wrong = current_question["incorrect_answers"]
-            App.get_running_app().curr_round = App.get_running_app().trivia.get_current_round()
-            App.get_running_app().curr_total_rounds = App.get_running_app().trivia.get_total_rounds()
-            self.shuffle_btn_labels(App.get_running_app().curr_correct, App.get_running_app().curr_wrong)
-
-    def shuffle_btn_labels(self, correct, base):
-        base.append(correct)
-        shuffle(base)
-        App.get_running_app().curr_btn_labels.clear()
-        for answer in base:
-            App.get_running_app().curr_btn_labels.append(answer)
-
-
-    def button_press(self, color):
-        if self.buttons_active:
-            self.ids.game_buttons.ids.game_btn_layout.remove_widget(self.ids.game_buttons.ids['btn_'+color])
-            self.ids.game_buttons.ids.game_btn_layout.add_widget(self.ids.game_buttons.ids['btn_'+color])
-            self.btn_pressed_anim.start(self.ids.game_buttons.ids['btn_'+color])
-            print("BUTTON PRESS: " + color)
-            self.answer = self.ids.game_buttons.ids['btn_'+color].text
-            self.last_button_color = color
-            self.start_answer_sequence()
+    def button_press(self, color, from_button=False):
+        if not from_button:
+            self.ids.game_buttons.ids['btn_{}'.format(color)].trigger_action(duration=.1)
+        self.ids.game_buttons.ids.game_btn_layout.remove_widget(self.ids.game_buttons.ids['btn_'+color])
+        self.ids.game_buttons.ids.game_btn_layout.add_widget(self.ids.game_buttons.ids['btn_'+color])
+        self.btn_pressed_anim.start(self.ids.game_buttons.ids['btn_'+color])
+        print("BUTTON PRESS: " + color)
+        self.last_button_color = color
 
     def timeout_sequence(self):
-        self.buttons_active = False
         self.q_anim("out")
-
-        App.get_running_app().trivia.cancel_game('timeout')
 
         self.ids.negative_label.text = 'Too late!'
         Clock.schedule_once(lambda dt: self.ids.negative_label.animate(), 0.5)
 
-        self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=self.end_answer_sequence)
+        self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=lambda: self.anim_out(True))
         App.get_running_app().snd_machine.mode_game(False)
 
-    def start_answer_sequence(self):
-        self.buttons_active = False
-        self.q_anim("out")
-        self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=self.end_answer_sequence)
-
-        if self.answer == App.get_running_app().curr_correct:
+    def answer_sequence(self, answer_result):
+        """Animates the answer feedback label."""
+        if answer_result == 'correct':
             print("CORRECT ANSWER")
             sound_feedback = 'correct'
             feedback_msg = choice(POSITIVES)
             feedback_lbl = self.ids.positive_label
-            App.get_running_app().trivia.register_answer(True)
-        else:
+        elif answer_result == 'incorrect':
             print("WRONG ANSWER")
             sound_feedback = 'wrong'
             feedback_msg = choice(NEGATIVES)
             feedback_lbl = self.ids.negative_label
-            App.get_running_app().trivia.register_answer(False)
 
         # Animate answer feedback
         feedback_lbl.text = feedback_msg
@@ -270,55 +251,39 @@ class Game(Screen):
 
         App.get_running_app().snd_machine.btn_answer(sound_feedback)
 
-    def end_answer_sequence(self):
+    def next_round_sequence(self, round_number):
+        """Animation for transitioning to next round."""
+        # For the first round, the controls are already there
+        if self.last_q_anim_direction == 'in':
+            self.anim_out()
+
+    def anim_out(self, game_end=False):
+            self.q_anim("out")
+            self.ids.game_buttons.anim_all("out", highlight=self.last_button_color, callback=lambda: self.anim_in_or_end(game_end))
+
+    def anim_in_or_end(self, game_end=False):
         # Reset positions of question label and input buttons
-        self.q_reset_pos()
         self.ids.game_buttons.reset_pos()
 
-        App.get_running_app().curr_score = App.get_running_app().trivia.score
-
-        if App.get_running_app().trivia.check_game():
-            # Game is still running - next question
-            self.load_current_question()
-
+        if game_end:
+            #Game is over, move to highscores
+            self.gi_anim("out")
+            Clock.schedule_once(self.goto_score, 1)
+        else:
             # Bring back question label and input buttons
             self.q_anim("in")
             self.ids.game_buttons.anim_all("in")
-            self.buttons_active = True
-        else:
-            # Game has ended - move to highscores
-            App.get_running_app().curr_author = '' # We want the author label to hide for the next game
-            App.get_running_app().curr_verdict = get_verdict(App.get_running_app().curr_score / App.get_running_app().curr_total_rounds)
-            self.gi_anim("out")
-            Clock.schedule_once(self.goto_score, 1)
+            self.trivia.end_transitioning()
 
     def goto_score(self, dt=None):
         self.manager.current = 'score'
 
     def q_anim(self, direction):
+        self.last_q_anim_direction = direction
         if direction == "in":
-            anim = Animation(
-                pos_hint={'center_x': self.ids.question_label.primary_position[0],
-                          'center_y': self.ids.question_label.primary_position[1]},
-                opacity=1,
-                t='out_quad',
-                duration=0.5)
-            self.ids.question_label.anim_mask_open()
+            self.ids.question_label.anim_in()
         else:
-            anim = Animation(
-                pos_hint={'center_x': self.ids.question_label.secondary_position_2[0],
-                          'center_y': self.ids.question_label.secondary_position_2[1]},
-                opacity=0,
-                t='in_quad',
-                duration=0.5)
-            anim.bind(on_complete=self.ids.question_label.reset_pos)
-        anim.start(self.ids.question_label)
-
-    def q_reset_pos(self):
-        self.ids.question_label.pos_hint = {
-            'center_x': self.ids.question_label.secondary_position_1[0],
-            'center_y': self.ids.question_label.secondary_position_1[1]
-        }
+            self.ids.question_label.anim_out()
 
     def gi_anim(self, direction):
         if direction == "in":
@@ -328,8 +293,6 @@ class Game(Screen):
                 opacity=1,
                 t='out_elastic',
                 duration=0.5)
-            if App.get_running_app().opt_timer:
-                self.ids.info_widget.ids.timer_bar.start_timer(App.get_running_app().curr_total_rounds, self.timeout_sequence)
         else:
             anim = Animation(
                 pos_hint={'center_x': self.ids.info_widget.secondary_position[0],
@@ -337,19 +300,19 @@ class Game(Screen):
                 opacity=0,
                 t='in_back',
                 duration=0.5)
-            if App.get_running_app().opt_timer:
-                self.ids.info_widget.ids.timer_bar.halt_timer()
         anim.start(self.ids.info_widget)
 
 class Score(TitleScreen):
+
+    player = ObjectProperty(rebind=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.press_ok_anim2 = None
         self.out_anim_1 = None
         self.out_anim_2 = None
-        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "score", partial(self.goto_func, App.get_running_app().load_game))
-        App.get_running_app().add_callback(CEC_CMD_MAP["RED"], "score", partial(self.goto_func, partial(App.get_running_app().goto_screen, s_name='options')))
+        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "score", lambda: App.get_running_app().trivia.new_game(continuation=True))
+        App.get_running_app().add_callback(CEC_CMD_MAP["RED"], "score", partial(App.get_running_app().goto_screen, s_name='options'))
 
     def start_secondary_anims(self, anim, widget, direction):
         if direction == 'in':
@@ -370,3 +333,7 @@ class Score(TitleScreen):
         # See explanation above
         super().reset_widgets()
         self.ids.press_ok.auto_anim = False
+
+class Fetching(TitleScreen):
+
+    pass

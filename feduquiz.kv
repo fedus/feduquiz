@@ -1,6 +1,7 @@
 #:import Animation kivy.animation.Animation
 #:import AlphaEffect alpha_shader.AlphaEffect
 #:import Scan kivy.uix.effectwidget.ScanlinesEffect
+#:import TimerStates timer.TimerStates
 #:import randint random.randint
 #:import partial functools.partial
 #:import App kivy.app.App
@@ -74,7 +75,7 @@
 
     Label:
         id: round_2
-        text: '%d of %d' % (app.curr_round, app.curr_total_rounds)
+        text: '%d of %d' % (app.trivia.round, app.trivia.total_rounds)
         font_size: sp(80)
         font_name: 'LondrinaSolid-Regular'
         size: self.texture_size[0]*1.35, self.texture_size[1]
@@ -171,7 +172,7 @@
     diff_colors: {'easy': (0,1,0), 'medium': (1,0.6,0), 'hard': (1,0,0)}
     diff_levels: {'easy': 0, 'medium': 1, 'hard': 2}
 
-    current_difficulty: app.curr_difficulty
+    current_difficulty: app.trivia.current_question["difficulty"] if app.trivia.current_question else ''
 
     indicator_color: self.diff_colors.get(self.widget_difficulty, (0,0,0,1))
     indicator_size: [20, 20]
@@ -229,7 +230,7 @@
     halign: 'center'
     size: self.texture_size
     size_hint: None, None
-    text: app.curr_question if app.curr_question else 'N/A'
+    label_text: app.trivia.current_question["question"] if app.trivia.current_question else 'N/A'
     font_size: sp(90)
     font_name: 'LondrinaSolid-Light'
 
@@ -304,7 +305,8 @@
 
 <GameButtons>
     size_hint: (1, 0.3)
-    btn_size_hint: (0.49, 0.47) if len(app.curr_btn_labels) > 2 else (0.49, 0.70)
+    btn_label_container: app.trivia.current_question['shuffled_answers'] if app.trivia.current_question else []
+    btn_size_hint: (0.49, 0.47) #if len(root.btn_label_container) > 2 else (0.49, 0.70) # clean this up!
     FloatLayout:
         size: root.size
         id: game_btn_layout
@@ -314,26 +316,26 @@
             secondary_scale_2: 1.4
             secondary_position_1: 0.25, -0.6
             secondary_position_2: -0.5, 0.75
-            primary_position: (0.25, 0.75) if len(app.curr_btn_labels) > 2 else (0.25, 0.5)
+            primary_position: (0.25, 0.75) if len(root.btn_label_container) > 2 else (0.25, 0.5)
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            text: app.curr_btn_labels[0] if len(app.curr_btn_labels) > 0 else 'N/A'
+            label_text: root.btn_label_container[0] if len(root.btn_label_container) > 0 else 'N/A'
             base_color: 'red'
-            on_press: root.game_root.button_press(self.base_color)
+            on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
             id: btn_green
             secondary_scale_1: 0.4
             secondary_scale_2: 1.6
             secondary_position_1: 0.75, -0.6
             secondary_position_2: 1.5, 0.75
-            primary_position: (0.75, 0.75) if len(app.curr_btn_labels) > 2 else (0.75, 0.5)
+            primary_position: (0.75, 0.75) if len(root.btn_label_container) > 2 else (0.75, 0.5)
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            text: app.curr_btn_labels[1] if len(app.curr_btn_labels) > 1 else 'N/A'
+            label_text: root.btn_label_container[1] if len(root.btn_label_container) > 1 else 'N/A'
             base_color: 'green'
-            on_press: root.game_root.button_press(self.base_color)
+            on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
             id: btn_yellow
             secondary_scale_1: 0.5
@@ -344,9 +346,9 @@
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            text: app.curr_btn_labels[2] if len(app.curr_btn_labels) > 2 else 'N/A'
+            label_text: root.btn_label_container[2] if len(root.btn_label_container) > 2 else 'N/A'
             base_color: 'yellow'
-            on_press: root.game_root.button_press(self.base_color)
+            on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
             id: btn_blue
             secondary_scale_1: 0.7
@@ -357,9 +359,9 @@
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            text: app.curr_btn_labels[3] if len(app.curr_btn_labels) > 3 else 'N/A'
+            label_text: root.btn_label_container[3] if len(root.btn_label_container) > 3 else 'N/A'
             base_color: 'blue'
-            on_press: root.game_root.button_press(self.base_color)
+            on_press: app.trivia.single_player_answer(self.base_color)
 
 <TriviaButton>:
     background_color: 0,0,0,0  # the last zero is the critical one, make invisible
@@ -566,7 +568,7 @@
         size: cat2.size
         ScrollLabel:
             id: cat2
-            label_text: app.curr_category
+            label_text: app.trivia.current_question["category"] if app.trivia.current_question else ''
             font_size: sp(80)
             font_name: 'LondrinaSolid-Regular'
             size_hint: None, None
@@ -607,7 +609,7 @@
 
     Author:
         id: author_widget
-        label_text: app.curr_author
+        label_text: app.trivia.current_question["author"] if app.trivia.current_question and app.trivia.current_question.get("author") else ''
         secondary_position: 0.5, 0.35
         primary_position: 0.5, 0
         pos_hint: {'center_x': self.secondary_position[0], 'y': self.secondary_position[1]}
@@ -621,6 +623,9 @@
 
     size_hint_y: None
     size_hint_x: 0.95
+
+    timer_pos: root.linked_timer.current_percentage if root.linked_timer else 0
+    timer_state: root.linked_timer.current_state if root.linked_timer else TimerStates.STOPPED
 
     canvas.before:
 
@@ -647,7 +652,7 @@
 
         Rectangle:
             pos: (self.x+5, self.y+5)
-            size: ((self.width-10) * root.current_percentage, self.height * 1.7)
+            size: ((self.width-10) * root.timer_pos, self.height * 1.7)
         
         StencilUse
 
@@ -663,7 +668,7 @@
 
         Rectangle:
             pos: (self.x+5, self.y+5)
-            size: ((self.width-10) * root.current_percentage, self.height * 1.7)
+            size: ((self.width-10) * root.timer_pos, self.height * 1.7)
 
         StencilPop
 

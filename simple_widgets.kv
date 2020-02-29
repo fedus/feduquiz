@@ -98,3 +98,91 @@
         text: root.post_text or ''
         size_hint: None, None
         size: self.texture_size
+
+<LoadingSpinner>
+    size_hint: None, None
+    size: 150, 150
+    inner_ellipse_size: 0.85
+    angle_start: 0
+    angle_end: 0
+    random_rotation: 0
+
+    canvas.before:
+
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        Ellipse:
+            pos: self.pos
+            size: self.size
+            angle_start: 0
+            angle_end: 360
+
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+        
+        StencilPush:
+
+        Ellipse:
+            size: [size * root.inner_ellipse_size for size in self.size]
+            pos: root.center_x - self.width * root.inner_ellipse_size / 2, root.center_y - self.height * root.inner_ellipse_size / 2
+            angle_start: root.angle_start
+            angle_end: root.angle_end
+
+        StencilUse:
+
+        Ellipse:
+            size: [size * root.inner_ellipse_size for size in self.size]
+            pos: root.center_x - self.width * root.inner_ellipse_size / 2, root.center_y - self.height * root.inner_ellipse_size / 2
+            angle_start: 0
+            angle_end: 360
+
+    canvas.after:
+        StencilUnUse:
+
+        # As per Kivy docs add identical mask as above
+        Ellipse:
+            size: [size * root.inner_ellipse_size for size in self.size]
+            pos: root.center_x - self.width * root.inner_ellipse_size / 2, root.center_y - self.height * root.inner_ellipse_size / 2
+            angle_start: root.angle_start
+            angle_end: root.angle_end
+
+        StencilPop:
+
+    Label:
+        id: question_mark_lbl
+        text: '?'
+        font_size: sp(120)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size
+        center_x: root.center_x
+        center_y: root.center_y
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+        canvas.before:
+            PushMatrix
+            Rotate:
+                angle: root.random_rotation
+                origin: self.center
+        canvas.after:
+            PopMatrix
+
+<LoadingNotice>
+
+    orientation: 'horizontal'
+    size: self.minimum_size
+    spacing: 50
+    size_hint: None, None
+
+    LoadingSpinner:
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    Label:
+        id: loading_text
+        text: 'Loading ...'
+        font_size: sp(140)
+        font_name: 'LondrinaSolid-Regular'
+        size: self.texture_size
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}

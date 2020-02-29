@@ -7,6 +7,11 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import StringProperty, ListProperty, NumericProperty
 from kivy.graphics.opengl import *
 from kivy.graphics import *
+from kivy.uix.widget import Widget
+from kivy.animation import Animation
+from kivy.clock import Clock
+
+from random import randrange
 
 class MainTitle(Label):
 
@@ -50,3 +55,27 @@ class PressColor(BoxLayout):
     butt_text = StringProperty('')
     butt_col = ListProperty([1,1,1,1])
     font_size = NumericProperty()
+
+class LoadingSpinner(Widget):
+
+    inner_ellipse_size: NumericProperty()
+    angle_start: NumericProperty(0)
+    angle_end: NumericProperty(0)
+    random_rotation: NumericProperty(0)
+    
+    def __init__(self, *args, **kwargs):
+        super(LoadingSpinner, self).__init__(*args, **kwargs)
+        self.anim = (
+            Animation(angle_end=360, t='in_out_quint', duration=0.75)
+            + Animation(angle_start=360, t='in_out_quint', duration=0.75)
+            + Animation(angle_end=0, angle_start=0, duration=0)
+        )
+        self.anim.bind(on_complete=lambda widget, animation: self.reset_and_generate_new_random_rotation())
+        Clock.schedule_once(lambda dt: self.anim.start(self))
+
+    def reset_and_generate_new_random_rotation(self):
+        self.random_rotation = randrange(0, 361, 1)
+        Clock.schedule_once(lambda dt: self.anim.start(self))
+
+class LoadingNotice(BoxLayout):
+    pass

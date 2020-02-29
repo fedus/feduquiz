@@ -1,3 +1,5 @@
+#:import TriviaStates trivia.TriviaStates
+
 <Screen>:
     canvas.before:
         Color:
@@ -25,7 +27,6 @@
         scale: 0
         outline_color: root.outline_col     # To be moved to MainTitle def and move anim in there.
 
-
     PlayOrOptions:
         id: press_ok
         opacity: 0
@@ -43,10 +44,15 @@
         OptionButton:
             focus: True
             text: 'Start game'
-            on_press: root.goto_func(app.load_game)
+            on_press: app.trivia.new_game()
         OptionButton:
             text: 'Instructions'
-            on_press: root.goto_func(partial(app.goto_screen, s_name='instructions'))
+            on_press: app.goto_screen(s_name='instructions')
+        OptionButton:
+            text: 'Players'
+            multiple_choice: True
+            action_target: 'opt_multiplayer'
+            choices: [['Single-player', False], ['Multi-player', True]]
         OptionButton:
             text: 'Trivia API'
             multiple_choice: True
@@ -84,7 +90,7 @@
             choices: [['Yes', True], ['No', False]]
         OptionButton:
             text: 'Credits'
-            on_press: root.goto_func(partial(app.goto_screen, s_name='credits'))
+            on_press: app.goto_screen(s_name='credits')
 
     BoxLayout:
         id: navigation
@@ -130,6 +136,8 @@
             font_size: 30
 
 <Game>
+    trivia: app.trivia if app.trivia else None
+
     GameInfo:
         id: info_widget
         secondary_position: 0.5, 1.2
@@ -223,18 +231,19 @@
 
 <Score>
     title_text: 'Score'
+    player: app.trivia.players[0] if app.trivia.players else None
 
     Label:
         id: score
         pos_hint: {'center_x': 0.5, 'center_y': 0.6}
         markup: True
-        text: '[b]' + str(app.curr_score) + '[/b] / ' + str(app.curr_total_rounds)
+        text: '[b]{}[/b] / {}'.format(root.player.all_rounds[-1]['score'] if root.player and len(root.player.all_rounds) > 0 else 'N/A', app.trivia.total_rounds)
         font_size: sp(160)
         font_name: 'LondrinaSolid-Regular'
     Label:
         id: verdict
         pos_hint: {'center_x': 0.5, 'center_y': 0.4}
-        text: app.curr_verdict
+        text: root.player.all_rounds[-1]['verdict'] if root.player and len(root.player.all_rounds) > 0 else 'N/A'
         font_size: sp(125)
         font_name: 'LondrinaSolid-Light'
         text_size: root.width*0.8, None
@@ -246,3 +255,8 @@
         opacity: 0
         auto_anim: False
         pos_hint: {'center_x': 0.5, 'center_y': 0.15}
+
+<Fetching>
+
+    LoadingNotice:
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}

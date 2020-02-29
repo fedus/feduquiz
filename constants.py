@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from helpers import get_categories
+
+# Backend settings
+
+BACKENDS = {
+    "opentdb": {
+        "url": "https://opentdb.com/api.php",
+        "categories": get_categories()
+
+    },
+    "feduquizdb": {
+        "url": "https://dillendapp.eu/feduquizdb/api/trivia",
+        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2]]
+    }
+}
+
 # Useful constants and strings
 
 CEC_CMD_MAP = {

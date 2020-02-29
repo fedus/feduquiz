@@ -21,17 +21,16 @@ from kivy.animation import Animation
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.properties import NumericProperty, ListProperty, StringProperty, BooleanProperty, ObjectProperty, DictProperty
 
-from enum import Enum
 from random import shuffle, choice, randint
 from functools import partial
 
-from helpers import get_categories, get_verdict
-from trivia import Trivia
+from trivia import Trivia, TriviaStates
 from soundmachine import SoundMachine
-from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score
+from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score, Fetching
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
-from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, SECS_PER_QUESTION, TIMER_WARNING
+from timer import TimerStates
+from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, BACKENDS
 
 import json
 import sys
@@ -43,24 +42,11 @@ DISABLE_CEC = True if '--disable-cec' in sys.argv else False
 USE_SAMPLE_DATA = True if '--use-sample-data' in sys.argv else False
 SET_SIZE = True if '--set-size' in sys.argv else False
 
-# Backend settings
-
-BACKENDS = {
-    "opentdb": {
-        "url": "https://opentdb.com/api.php",
-        "categories": get_categories()
-
-    },
-    "feduquizdb": {
-        "url": "https://dillendapp.eu/feduquizdb/api/trivia",
-        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2]]
-    }
-}
-
-
 class GameButtons(Widget):
 
     game_root = ObjectProperty()
+    btn_label_container = ObjectProperty(rebind=True)
+    btn_size_hint = ListProperty()
 
     def anim_all(self, direction, highlight=None, callback=None):
 
@@ -75,7 +61,7 @@ class GameButtons(Widget):
 
         # Check what buttons need to be animated which way (to highlight answer)
         # Only really intended to be used for the fade OUT animation!
-        col_list = ['red', 'green', 'yellow', 'blue'] if len(App.get_running_app().curr_btn_labels) > 2 else ['red', 'green']
+        col_list = ['red', 'green', 'yellow', 'blue'] if len(self.btn_label_container) > 2 else ['red', 'green']
         col_needed = [col for col in col_list if col is not highlight] if highlight else col_list
         
         # Check if a button is to be highlighted (ie
@@ -93,6 +79,7 @@ class GameButtons(Widget):
             time_start += 0.1
 
         if direction == "in":
+            self.btn_size_hint = [0.49, 0.47] if len(App.get_running_app().trivia.current_question['shuffled_answers']) > 2 else [0.49, 0.70]
             for color in col_list:
                 self.ids['btn_' + color].stop_effect_anims()
                 Clock.schedule_once(self.ids['btn_' + color].effect_anim, 0.7)
@@ -107,6 +94,7 @@ class GameButtons(Widget):
                   t='out_elastic', duration=1)
         if callback:
             anim.bind(on_complete=lambda anim, widget: callback())
+        btn.update_label()
         anim.start(btn)
 
     def anim_out(self, dt, btn, callback=None):
@@ -125,6 +113,7 @@ class GameButtons(Widget):
 
 class TriviaButton(Button):
 
+    label_text = StringProperty()
     scale = NumericProperty()
     x_transform = NumericProperty()
     x_transform_end = NumericProperty()
@@ -185,6 +174,11 @@ class TriviaButton(Button):
         """Resets the special effect animation to its initial settings."""
         self.x_transform = -20
 
+    def update_label(self):
+        """Updates the button's label."""
+        self.text = self.label_text
+        self.texture_update()
+
 
 class AnswerFeedbackLabel(Label):
 
@@ -209,6 +203,7 @@ class AnswerFeedbackLabel(Label):
 
 class QuestionLabel(Label):
 
+    label_text = StringProperty()
     secondary_position_1 = ListProperty()
     secondary_position_2 = ListProperty()
     primary_position = ListProperty()
@@ -222,8 +217,37 @@ class QuestionLabel(Label):
         anim = Animation(mask_width=self.bg_size[0], t='out_quad', duration=1)
         anim.start(self)
 
-    def reset_pos(self, anim=None, widget=None):
+    def reset_mask(self, anim=None, widget=None):
         self.mask_width = 0
+
+    def anim_in(self):
+        self.text = self.label_text
+        self.texture_update()
+        self.reset_pos()
+        self.anim_mask_open()
+        Animation(
+            pos_hint={'center_x': self.primary_position[0],
+                        'center_y': self.primary_position[1]},
+            opacity=1,
+            t='out_quad',
+            duration=0.5
+        ).start(self)
+
+    def anim_out(self):
+        anim = Animation(
+            pos_hint={'center_x': self.secondary_position_2[0],
+                        'center_y': self.secondary_position_2[1]},
+            opacity=0,
+            t='in_quad',
+            duration=0.5)
+        anim.bind(on_complete=self.reset_mask)
+        anim.start(self)
+
+    def reset_pos(self):
+        self.pos_hint = {
+            'center_x': self.secondary_position_1[0],
+            'center_y': self.secondary_position_1[1]
+        }
 
 class Round(BoxLayout):
     pass
@@ -396,41 +420,25 @@ class CategoryAuthorCombo(RelativeLayout):
     
     category_scroll_size = ListProperty([0, 0])
 
-class TimerStates(Enum):
-    RUNNING = 1
-    WARN = 2
-    LAPSED = 3
-    STOPPED = 4
-
 class TimerBar(Widget):
 
-    current_percentage = NumericProperty(0)
-    current_state = ObjectProperty(TimerStates.LAPSED)
     bar_col = ListProperty([150/255, 54/255, 148/255,1])
     warn_bg_col = ListProperty([1, 0, 0, 0])
     warn_scale = NumericProperty(1)
+    timer_state = ObjectProperty(TimerStates.STOPPED, rebind=True)
+    timer_pos = NumericProperty(0)
+    linked_timer = ObjectProperty(rebind=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.running = False
-        self.seconds = 0
-        self.bar_animation = Animation()
         self.bar_color_animation = Animation()
         self.warn_animation = Animation()
-        self.callback = None
-        self.resetting = False
+        self.linked_timer = None
 
-    def on_current_percentage(self, widget, new_percentage):
-        if not self.running:
-            self.current_state = TimerStates.STOPPED
-        elif self.resetting or new_percentage > TIMER_WARNING:
-            self.current_state = TimerStates.RUNNING
-        elif 0 < new_percentage <= TIMER_WARNING:
-            self.current_state = TimerStates.WARN
-        else:
-            self.current_state = TimerStates.LAPSED
+    def link_timer(self, timer):
+        self.linked_timer = timer
 
-    def on_current_state(self, widget, new_state):
+    def on_timer_state(self, widget, new_state):
         App.get_running_app().snd_machine.timer_tick_tock(new_state == TimerStates.WARN)
         if new_state == TimerStates.WARN:
             self.warn_animation = (
@@ -451,61 +459,12 @@ class TimerBar(Widget):
             if new_state == TimerStates.LAPSED:
                 App.get_running_app().snd_machine.timer_timeout()
 
-    def start_timer(self, rounds, callback=None, reset=True):
-        """
-        (Re)starts the timer
-        """
-        self.running = True
-        self.resetting = True
-        if reset:
-            self.reset_timer()
-        self.callback = callback
-        self.seconds = SECS_PER_QUESTION * rounds
-        self.bar_animation.cancel(self)
-        self.bar_animation = Animation(current_percentage=1, duration=0.5)
-        self.bar_animation.bind(on_complete=self.run_timer)
-        self.bar_animation.start(self)
-
-    def run_timer(self, anim=None, widget=None):
-        self.resetting = False
-        self.bar_animation = Animation(current_percentage=0, duration=self.seconds)
-        self.bar_animation.bind(on_complete=self.reset_running)
-        self.bar_animation.start(self)
-
-    def halt_timer(self):
-        if self.current_state is not TimerStates.LAPSED:
-            self.bar_animation.cancel(self)
-            self.current_state = TimerStates.STOPPED
-
-    def reset_running(self, anim=None, widget=None):
-        self.running = False
-        self.current_state = TimerStates.LAPSED
-        if self.callback:
-            self.callback()
-
-    def reset_timer(self):
-        self.bar_animation.cancel(self)
-        self.current_percentage = 0
-
 class Feduquiz(App):
     title = 'Feduquiz'
 
     bg_col = ListProperty([0, 0, 0])
 
-    trivia = Trivia(USE_SAMPLE_DATA)
-
-    curr_question = StringProperty()
-    curr_author = StringProperty()
-    curr_type = StringProperty()
-    curr_difficulty = StringProperty()
-    curr_category = StringProperty()
-    curr_correct = StringProperty()
-    curr_wrong = ListProperty([])
-    curr_btn_labels = ListProperty([])
-    curr_score = NumericProperty(0)
-    curr_round = NumericProperty(0)
-    curr_total_rounds = NumericProperty(0)
-    curr_verdict = StringProperty()
+    trivia = ObjectProperty(Trivia(USE_SAMPLE_DATA), rebind=True)
 
     opt_api = StringProperty('opentdb')
     opt_difficulty = StringProperty('')
@@ -514,6 +473,7 @@ class Feduquiz(App):
     opt_instant_fb = BooleanProperty(True)
     opt_timer = BooleanProperty(True)
     opt_type = StringProperty('')
+    opt_multiplayer = BooleanProperty(False)
 
     categories = ListProperty([['All', 0]])
     backends = ListProperty([["Open Trivia DB", "opentdb"],["Feduquiz DB", "feduquizdb"]])
@@ -522,7 +482,7 @@ class Feduquiz(App):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.categories = get_categories()
+        self.categories = BACKENDS["opentdb"]["categories"]
         self.bind(opt_api=self.update_categories)
         self.fps_event = Clock.schedule_interval(self.print_fps, 1/2.0)
         self.sm = None
@@ -568,26 +528,29 @@ class Feduquiz(App):
         self.sm.add_widget(Options(name='options'))
         self.sm.add_widget(Instructions(name='instructions'))
         self.sm.add_widget(Credits(name='credits'))
+        self.sm.add_widget(Fetching(name='fetching'))
         return self.sm
 
     def update_categories(self, property, api):
         self.categories = BACKENDS[api]["categories"]
 
-    def load_game(self, anim=None, widget=None):
-        self.trivia.new_game(BACKENDS[self.opt_api]["url"], self.opt_difficulty, self.opt_category, self.opt_amount, self.opt_type)
-        Clock.schedule_once(self.check_switch_screen)
-
-    def check_switch_screen(self, dt=None):
-        if not self.trivia.running:
-            Clock.schedule_once(self.check_switch_screen)
-            return
-        self.sm.current = 'game'
-        self.snd_machine.mode_game()
-
-    def goto_screen(self, dt=None, s_name=None):
+    def goto_screen(self, s_name=None, menu_mode=True):
+        """Go to given screen by animating if possible."""
         if s_name:
-            self.sm.current = s_name
+            current_screen = self.sm.get_screen(self.sm.current)
+            goto_func = getattr(current_screen, 'goto_func', False)
+            if callable(goto_func):
+                goto_func(lambda: self.switch_screen(s_name, menu_mode))
+            else:
+                self.switch_screen(s_name, menu_mode)
+
+    def switch_screen(self, s_name, menu_mode=True):
+        """Hard switch to given screen."""
+        self.sm.current = s_name
+        if menu_mode:
             self.snd_machine.mode_menu()
+        else:
+            self.snd_machine.mode_menu(False)
 
     @mainthread
     def command_callback(self, cmd, origin):

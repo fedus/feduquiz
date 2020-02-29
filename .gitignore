@@ -2,3 +2,5 @@
 ._*
 .idea/*
 **__pycache__**
+/env/
+.vscode/
