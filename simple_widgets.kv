@@ -1,3 +1,5 @@
+#:import randrange random.randrange
+
 <MainTitle>
     font_name: 'LuckiestGuy-Regular'
     font_size: 200
@@ -174,6 +176,7 @@
     size: self.minimum_size
     spacing: 50
     size_hint: None, None
+    font_size: sp(140)
 
     LoadingSpinner:
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
@@ -181,8 +184,187 @@
     Label:
         id: loading_text
         text: 'Loading ...'
-        font_size: sp(140)
+        font_size: root.font_size
         font_name: 'LondrinaSolid-Regular'
         size: self.texture_size
         size_hint: None, None
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<JoinedPlayer>
+
+    font_size: sp(70)
+    orientation: 'horizontal'
+    size_hint: None, None
+    size: self.minimum_size
+    ellipse_size_factor: 0.85
+    initial_lbl: initial_lbl
+    name_lbl: name_lbl
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        Ellipse:
+            size: [root.initial_lbl.height] * 2 if root.initial_lbl else (10, 10)
+            pos: [root.initial_lbl.center_x - root.initial_lbl.height / 2, self.initial_lbl.y] if root.initial_lbl else (100, 100)
+            angle_start: 0
+            angle_end: 360
+
+        RoundedRectangle:
+            pos: (root.initial_lbl.center_x, root.name_lbl.y) if root.name_lbl and root.initial_lbl else (0,0)
+            size: (root.initial_lbl.width / 2 + root.spacing + root.name_lbl.width, root.name_lbl.height) if root.name_lbl and root.initial_lbl else (0,0)
+            radius: [30,]
+
+        # Border of background shapes
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        Ellipse:
+            size: [root.initial_lbl.height * root.ellipse_size_factor] * 2 if root.initial_lbl else (10, 10)
+            pos: [root.initial_lbl.center_x - root.initial_lbl.height * root.ellipse_size_factor / 2, root.initial_lbl.center_y - root.initial_lbl.height * root.ellipse_size_factor / 2] if root.initial_lbl else (100, 100)
+            angle_start: 0
+            angle_end: 360
+
+    Label:
+        id: initial_lbl
+        text: root.player.name[0] if root.player else '?'
+        font_size: root.font_size*1.5
+        font_name: 'LondrinaSolid-Regular'
+        size: [self.texture_size[1] * 1.1] * 2
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+        canvas.before:
+            PushMatrix
+            Rotate:
+                angle: randrange(-25, 26, 1)
+                origin: self.center
+
+        canvas.after:
+            PopMatrix
+
+    Label:
+        id: name_lbl
+        text: root.player.name if root.player else 'N/A'
+        font_size: root.font_size
+        font_name: 'LondrinaSolid-Regular'
+        halign: 'right'
+        size: [size * 1.2 for size in self.texture_size]
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<PlayerList>
+
+    players: app.trivia.players if app.trivia else []
+    cols: 2
+    col_default_width: self.width / self.cols
+    col_force_default: True
+    rows: 3
+    row_default_height: self.height / self.rows
+    row_force_default: True
+    size_hint: 0.9, 1
+
+<Highscore>
+
+    orientation: 'vertical'
+    size: self.minimum_size
+    size_hint: None, None
+    ellipse_size_factor: 0.85
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    score_lbl: score_lbl
+
+    # Don't like this whole widget. No bueno.
+    canvas.before:
+
+        # Background shapes
+        Color:
+            rgba: (190/255, 144/255, 212/255,1)
+
+        RoundedRectangle:
+            pos: root.score_lbl.pos if root.score_lbl else (0,0)
+            size: (root.score_lbl.width, root.score_lbl.height * 1.3) if root.score_lbl else (0,0)
+            radius: [30,]
+
+        # Border of background shapes
+        Color:
+            rgba: (150/255, 54/255, 148/255,1)
+
+        RoundedRectangle:
+            pos: (root.score_lbl.center_x - root.score_lbl.width * root.ellipse_size_factor / 2, root.score_lbl.center_y - root.score_lbl.height * root.ellipse_size_factor / 2) if root.score_lbl else (0,0)
+            size: (root.score_lbl.width * root.ellipse_size_factor, root.score_lbl.height * 1.3) if root.score_lbl else (0,0)
+            radius: [30,]
+
+    Label:
+        id: position_lbl
+        text: '#{}'.format(root.player.all_rounds[-1]['position']) if root.player and len(root.player.all_rounds) > 0 else '-'
+        font_size: sp(100)
+        font_name: 'LondrinaSolid-Regular'
+        halign: 'right'
+        size: (self.texture_size[0] * 1.6, self.texture_size[1])
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+        canvas.before:
+
+            # Background shapes
+            Color:
+                rgba: (190/255, 144/255, 212/255,1)
+
+            Ellipse:
+                size: [self.width] * 2
+                pos: [self.center_x - self.width / 2, self.center_y - self.width / 2]
+                angle_start: 0
+                angle_end: 360
+
+            # Border of background shapes
+            Color:
+                rgba: (150/255, 54/255, 148/255,1)
+
+            Ellipse:
+                size: [self.width  * root.ellipse_size_factor] * 2
+                pos: [self.center_x - self.width  * root.ellipse_size_factor / 2, self.center_y - self.width  * root.ellipse_size_factor / 2]
+                angle_start: 0
+                angle_end: 360
+
+    Label:
+        id: name_lbl
+        text: root.player.name if root.player else 'N/A'
+        font_size: sp(70)
+        font_name: 'LondrinaSolid-Regular'
+        halign: 'right'
+        size: (self.texture_size[0] * 1.2, self.texture_size[1] * 1.05)
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+        canvas.before:
+
+            # Background shapes
+            Color:
+                rgba: (190/255, 144/255, 212/255,1)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [30,]
+
+    Label:
+        id: score_lbl
+        text: '{} %'.format(int(root.player.all_rounds[-1]['score'] / len(root.player.all_rounds[-1]['answers']) * 100)) if root.player and len(root.player.all_rounds) > 0 else 'N/A'
+        font_size: sp(90)
+        font_name: 'LondrinaSolid-Regular'
+        halign: 'right'
+        size: (self.texture_size[0] * 1.5, self.texture_size[1] * 1.05)
+        size_hint: None, None
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<TopThree>
+
+    players: app.trivia.players if app.trivia else []
+    orientation: 'horizontal'
+    spacing: 30
+    size_hint: 0.9, 0.7
+    size: self.minimum_size
+    size_hint: None, None

@@ -4,13 +4,15 @@
 from kivy.uix.label import Label
 from kivy.uix.effectwidget import EffectWidget
 from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import StringProperty, ListProperty, NumericProperty
+from kivy.uix.gridlayout import GridLayout
+from kivy.properties import StringProperty, ListProperty, NumericProperty, ObjectProperty
 from kivy.graphics.opengl import *
 from kivy.graphics import *
 from kivy.uix.widget import Widget
 from kivy.animation import Animation
 from kivy.clock import Clock
 
+from trivia import Player   # delete me pls!
 from random import randrange
 
 class MainTitle(Label):
@@ -79,3 +81,59 @@ class LoadingSpinner(Widget):
 
 class LoadingNotice(BoxLayout):
     pass
+
+class JoinedPlayer(BoxLayout):
+    
+    player = ObjectProperty(rebind=True)
+    initial_lbl = ObjectProperty(rebind=True)
+    name_lbl = ObjectProperty(rebind=True)
+
+class PlayerList(GridLayout):
+    
+    players = ListProperty([])
+
+    def clear(self):
+        """Clears all player icons from list."""
+        self.clear_widgets()
+
+    def on_players(self, widget, players):
+        players_in_game = list(map(lambda player: player.id, players))
+        players_in_list = list(map(lambda widget: widget.player.id, self.children))
+        new_players = [player for player in players if player.id not in players_in_list]
+        gone_players = [player for player in players_in_list if player not in players_in_game]
+        print('Existing: {}'.format(players_in_list))
+        print('New: {}, gone: {}'.format(list(map(lambda player: player.id, new_players)), list(map(lambda player: player.id, gone_players))))
+        for new_player in new_players:
+            self.add_widget(JoinedPlayer(player=new_player))
+        for gone_player in gone_players:
+            target_widget = next(filter(lambda widget: widget.player.id == gone_player.id, self.children), False)
+            self.remove_widget(target_widget)
+
+class Highscore(BoxLayout):
+
+    player = ObjectProperty(rebind=True)
+    score_lbl = ObjectProperty(rebind=True)
+
+    def __init__(self, *args, **kwargs):
+        super(Highscore, self).__init__(*args, **kwargs)
+
+class TopThree(BoxLayout):
+
+    players = ListProperty([])
+
+    def clear(self):
+        """Clears all player icons from list."""
+        self.clear_widgets()
+
+    def on_players(self, widget, players):
+        players_in_game = list(map(lambda player: player.id, players))
+        players_in_list = list(map(lambda widget: widget.player.id, self.children))
+        new_players = [player for player in players if player.id not in players_in_list]
+        gone_players = [player for player in players_in_list if player not in players_in_game]
+        print('Existing: {}'.format(players_in_list))
+        print('New: {}, gone: {}'.format(list(map(lambda player: player.id, new_players)), list(map(lambda player: player.id, gone_players))))
+        for new_player in new_players:
+            self.add_widget(Highscore(player=new_player))
+        for gone_player in gone_players:
+            target_widget = next(filter(lambda widget: widget.player.id == gone_player.id, self.children), False)
+            self.remove_widget(target_widget)

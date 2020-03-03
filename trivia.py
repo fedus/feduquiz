@@ -7,13 +7,15 @@ from kivy.event import EventDispatcher
 from kivy.app import App
 from kivy.clock import Clock
 
+from functools import partial
 from toolz.dicttoolz import assoc
-from random import sample
+from random import sample, randrange
 from html import unescape
 from enum import Enum
-from helpers import get_verdict
+from helpers import get_verdict, make_qr_code
 from timer import Timer
-from constants import BACKENDS, SECS_PER_QUESTION
+from gameserver import MQTTGameServer
+from constants import BACKENDS, SECS_PER_QUESTION, MULTIPLAYER_GAME_PATTERN, MULTIPLAYER_JOIN_LINK_BASE
 
 import json
 
@@ -30,11 +32,12 @@ class Player(EventDispatcher):
     answered = BooleanProperty(False)
 
     @staticmethod
-    def get_new_round_dictionary():
-        return {'score': 0, 'verdict': None, 'answers': []}
+    def get_new_round_dictionary(initial_score=0):
+        return {'score': initial_score, 'verdict': None, 'position': None, 'answers': []}
 
     def __init__(self, game, name, id, initial_score=0, **kwargs):
         super().__init__(**kwargs)
+        self.register_event_type('on_answer')
         self.register_event_type('on_correct_answer')
         self.register_event_type('on_incorrect_answer')
         self.register_event_type('on_already_answered')
@@ -43,16 +46,19 @@ class Player(EventDispatcher):
         self.game = game
         self.name = name
         self.id = id
-        self.round_score = initial_score
-        self.current_round = self.get_new_round_dictionary()
+        self.current_round = self.get_new_round_dictionary(initial_score)
+
+    def on_answer(self):
+        """Event handler for any accepted answer."""
+        pass
 
     def on_correct_answer(self):
         """Event handler for correct answer."""
-        pass
+        self.dispatch('on_answer')
 
     def on_incorrect_answer(self):
         """Event handler for incorrect answer."""
-        pass
+        self.dispatch('on_answer')
 
     def on_already_answered(self):
         """Event handler for trying to answer when already answered."""
@@ -105,6 +111,10 @@ class Player(EventDispatcher):
         """Called when the current game has ended and the player's verdict has to be fetched."""
         self.current_round['verdict'] = get_verdict(self.current_round['score'] / len(self.current_round['answers']))
 
+    def set_position(self, position):
+        """Sets highscore position for current round."""
+        self.current_round['position'] = position
+
     def next_round(self):
         """Archives current round and sets up next round."""
         self.total_score += self.current_round['score']
@@ -137,6 +147,8 @@ class Trivia(EventDispatcher):
     current_question = DictProperty(rebind=True)
     transitioning = BooleanProperty(False)
     timer = ObjectProperty(rebind=True)
+    game_code = StringProperty()
+    qr_code = ObjectProperty(rebind=True)
 
     def __init__(self, use_sample_data=False, **kwargs):
         super().__init__(**kwargs)
@@ -160,6 +172,8 @@ class Trivia(EventDispatcher):
         self.req = None
         self.use_sample_data = use_sample_data
         self.timer = Timer()
+        self.server = MQTTGameServer(self)
+        self.token = None
 
     def on_stopped(self):
         """Event handler for game stop."""
@@ -167,7 +181,7 @@ class Trivia(EventDispatcher):
 
     def on_joining(self):
         """Event handler for game joining period."""
-        pass
+        App.get_running_app().goto_screen(s_name='joining', menu_mode=False)
 
     def on_fetching(self):
         """Event handler for when game is still fetching questions from API."""
@@ -180,6 +194,7 @@ class Trivia(EventDispatcher):
     def on_running(self):
         """Event handler for game start."""
         App.get_running_app().goto_screen(s_name='game', menu_mode=False)
+        self.toggle_timer(start=True, reset=True)
 
     def on_finished(self):
         """Event handler for game finish."""
@@ -191,9 +206,19 @@ class Trivia(EventDispatcher):
 
     def on_ended(self):
         """Event handler for game end for any reason."""
+        all_scores = list(map(lambda player: player.current_round['score'], self.players))
         for player in self.players:
             player.fetch_verdict()
+            player.set_position(self.get_players_position(all_scores, player))
             player.next_round()
+
+    def get_players_position(self, all_scores, player):
+        """Fetch a player's position in the current round."""
+        all_scores.sort(reverse=True)
+        print('All scores: {}'.format(all_scores))
+        print('this score: {}'.format(player.current_round['score']))
+        print('pos: {}'.format(all_scores.index(player.current_round['score'])))
+        return all_scores.index(player.current_round['score']) + 1
 
     def on_successful_join(self):
         """Event handler for successful player join."""
@@ -237,9 +262,9 @@ class Trivia(EventDispatcher):
     def on_round(self, widget, new_round):
         """Advance current question."""
         if 1 <= new_round <= len(self.all_questions):
-            if new_round == 1:
-                self.timer.reset_timer()
-            self.toggle_timer(start=True, reset=False)
+            # Checking for state to prevent timer going off when loading next game when score is still at the old last round
+            if self.current_state == TriviaStates.RUNNING and new_round > 1:
+                self.toggle_timer(start=True, reset=False)
             self.current_question = self.all_questions[new_round - 1]
 
     def on_timeout(self):
@@ -267,13 +292,19 @@ class Trivia(EventDispatcher):
 
         self.transitioning = False
         self.fetched = False
-        self.fetch_new(api, difficulty, category, amount, q_type)
+        self.check_token_and_fetch_new(api, difficulty, category, amount, q_type)
         if continuation:
             self.current_state = TriviaStates.FETCHING
             self.start_game()
         else:
             self.players.clear()
             if multiplayer:
+                # TODO: Make random again / improve
+                self.game_code = MULTIPLAYER_GAME_PATTERN.format(randrange(0, 11, 1))
+                self.qr_code = make_qr_code(MULTIPLAYER_JOIN_LINK_BASE, self.game_code)
+                self.server.listen(self.game_code)
+                print('Multiplayer game with code {} started'.format(self.game_code))
+
                 self.current_state = TriviaStates.JOINING
             else:
                 self.add_player('feduquiz-0', 'Player 1', True)
@@ -282,10 +313,15 @@ class Trivia(EventDispatcher):
 
     def add_player(self, name, id, force_add=False):
         """Lets a new player join the game."""
+        print('Player join request for player {} with id {}'.format(name, id))
         if force_add or self.current_state == TriviaStates.JOINING:
             new_player = Player(self, name, id)
-            self.players.append(new_player)
-            return new_player
+            if not self.does_player_exist(new_player):
+                self.players.append(new_player)
+                return new_player
+            else:
+                print('Player {} with id {} already exists.'.format(name, id))
+                return False
         else:
             print('Player {} with id {} tried to join game outside of joining window.'.format(name, id))
             return False
@@ -315,7 +351,7 @@ class Trivia(EventDispatcher):
 
     def single_player_answer(self, answer_colour):
         """Convenience function that passes through the answer from buttons in single-player mode only."""
-        if self.player_count == 1:
+        if not App.get_running_app().opt_multiplayer:
             self.players[0].answer(answer_colour, True)
 
     def handle_answer(self, player, answer_colour, from_button=False):
@@ -364,9 +400,29 @@ class Trivia(EventDispatcher):
         """Returns all players that haven't answered yet."""
         return filter(lambda player: player.answered == False, self.players)
 
+    def does_player_exist(self, player):
+        """Checks if the given player id (or name) is already in use."""
+        new_player_has_same_id_or_name_as = lambda curr_player: curr_player.id == player.id or curr_player.name == player.name
+        return any(new_player_has_same_id_or_name_as(existing_player) for existing_player in self.players)
+
     def end_transitioning(self):
         """Used to notify that relevant animations are done and answers can be accepted."""
         self.transitioning = False
+
+    def check_token_and_fetch_new(self, api, difficulty, category, amount, q_type):
+        if not self.token and "token" in BACKENDS[api]:
+            UrlRequest(
+                BACKENDS[api]['token'],
+                on_success=partial(self.save_token_and_fetch_new, api, difficulty, category, amount, q_type),
+                on_failure=self.fetch_fail,
+                on_error=self.fetch_error
+            )
+        else:
+            self.fetch_new(api, difficulty, category, amount, q_type)
+
+    def save_token_and_fetch_new(self, api, difficulty, category, amount, q_type, request, result):
+        self.token = result['token']
+        self.fetch_new(api, difficulty, category, amount, q_type)
 
     def fetch_new(self, api, difficulty, category, amount, q_type):
         if self.use_sample_data:
@@ -376,6 +432,8 @@ class Trivia(EventDispatcher):
             self.fetch_success(None, data)
         else:
             base_url = BACKENDS[api]['url'] + '?'
+            if self.token:
+                base_url += 'token=' + str(self.token) + '&'
             if difficulty is not '':
                 base_url += 'difficulty=' + str(difficulty) + '&'
             if category is not 0:
@@ -383,9 +441,18 @@ class Trivia(EventDispatcher):
             if q_type is not '':
                 base_url += 'type=' + str(q_type) + '&'
             base_url += 'amount=' + str(amount)
-            self.req = UrlRequest(base_url, on_success=self.fetch_success, on_failure=self.fetch_fail, on_error=self.fetch_error)
+            self.req = UrlRequest(
+                base_url,
+                on_success=partial(self.fetch_success, api, difficulty, category, amount, q_type),
+                on_failure=self.fetch_fail,
+                on_error=self.fetch_error
+            )
 
-    def fetch_success(self, request, result):
+    def fetch_success(self, api, difficulty, category, amount, q_type, request, result):
+        if result['response_code'] == 3 or result['response_code'] == 4:
+            print("Token invalidated, fetching again ...")
+            self.token = None
+            return self.check_token_and_fetch_new(api, difficulty, category, amount, q_type)
         self.all_questions = self.shuffle_answers(self.html_decode(result['results']))
         #self.current_state = TriviaStates.RUNNING
         self.fetched = True

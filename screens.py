@@ -212,13 +212,17 @@ class Game(Screen):
         self.ids.game_buttons.anim_all("in")
 
     def button_press(self, color, from_button=False):
-        if not from_button:
-            self.ids.game_buttons.ids['btn_{}'.format(color)].trigger_action(duration=.1)
-        self.ids.game_buttons.ids.game_btn_layout.remove_widget(self.ids.game_buttons.ids['btn_'+color])
-        self.ids.game_buttons.ids.game_btn_layout.add_widget(self.ids.game_buttons.ids['btn_'+color])
-        self.btn_pressed_anim.start(self.ids.game_buttons.ids['btn_'+color])
-        print("BUTTON PRESS: " + color)
-        self.last_button_color = color
+        if not App.get_running_app().opt_multiplayer:
+            if not from_button:
+                self.ids.game_buttons.ids['btn_{}'.format(color)].trigger_action(duration=.1)
+            self.ids.game_buttons.ids.game_btn_layout.remove_widget(self.ids.game_buttons.ids['btn_'+color])
+            self.ids.game_buttons.ids.game_btn_layout.add_widget(self.ids.game_buttons.ids['btn_'+color])
+            self.btn_pressed_anim.start(self.ids.game_buttons.ids['btn_'+color])
+            print("BUTTON PRESS: " + color)
+            self.last_button_color = color
+        else:
+            self.btn_pressed_anim.start(self.ids.game_buttons)
+            self.last_button_color = None
 
     def timeout_sequence(self):
         self.ids.negative_label.text = 'Too late!'
@@ -300,6 +304,7 @@ class Game(Screen):
 class Score(TitleScreen):
 
     player = ObjectProperty(rebind=True)
+    #player2 = ObjectProperty(rebind=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -330,5 +335,11 @@ class Score(TitleScreen):
         self.ids.press_ok.auto_anim = False
 
 class Fetching(TitleScreen):
-
     pass
+
+class Joining(TitleScreen):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "joining", App.get_running_app().trivia.start_game)
+        App.get_running_app().add_callback(CEC_CMD_MAP["RED"], "joining", partial(App.get_running_app().goto_screen, s_name='options'))

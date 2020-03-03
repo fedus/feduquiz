@@ -26,7 +26,7 @@ from functools import partial
 
 from trivia import Trivia, TriviaStates
 from soundmachine import SoundMachine
-from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score, Fetching
+from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Score, Fetching, Joining
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
 from timer import TimerStates
@@ -45,13 +45,16 @@ SET_SIZE = True if '--set-size' in sys.argv else False
 class GameButtons(Widget):
 
     game_root = ObjectProperty()
-    btn_label_container = ObjectProperty(rebind=True)
+    current_btn_label_container = ObjectProperty(rebind=True)
+    cached_btn_label_container = ObjectProperty(rebind=True)
     btn_size_hint = ListProperty()
+    scale = NumericProperty(1)
 
     def anim_all(self, direction, highlight=None, callback=None):
 
         # Check if we're animating in or out
         if direction == "in":
+            self.cached_btn_label_container = self.current_btn_label_container
             anim_func = self.anim_in
         else:
             anim_func = self.anim_out
@@ -61,7 +64,7 @@ class GameButtons(Widget):
 
         # Check what buttons need to be animated which way (to highlight answer)
         # Only really intended to be used for the fade OUT animation!
-        col_list = ['red', 'green', 'yellow', 'blue'] if len(self.btn_label_container) > 2 else ['red', 'green']
+        col_list = ['red', 'green', 'yellow', 'blue'] if len(self.cached_btn_label_container) > 2 else ['red', 'green']
         col_needed = [col for col in col_list if col is not highlight] if highlight else col_list
         
         # Check if a button is to be highlighted (ie
@@ -79,7 +82,7 @@ class GameButtons(Widget):
             time_start += 0.1
 
         if direction == "in":
-            self.btn_size_hint = [0.49, 0.47] if len(App.get_running_app().trivia.current_question['shuffled_answers']) > 2 else [0.49, 0.70]
+            self.btn_size_hint = [0.49, 0.47] if len(self.cached_btn_label_container) > 2 else [0.49, 0.70]
             for color in col_list:
                 self.ids['btn_' + color].stop_effect_anims()
                 Clock.schedule_once(self.ids['btn_' + color].effect_anim, 0.7)
@@ -94,7 +97,6 @@ class GameButtons(Widget):
                   t='out_elastic', duration=1)
         if callback:
             anim.bind(on_complete=lambda anim, widget: callback())
-        btn.update_label()
         anim.start(btn)
 
     def anim_out(self, dt, btn, callback=None):
@@ -113,7 +115,6 @@ class GameButtons(Widget):
 
 class TriviaButton(Button):
 
-    label_text = StringProperty()
     scale = NumericProperty()
     x_transform = NumericProperty()
     x_transform_end = NumericProperty()
@@ -173,12 +174,6 @@ class TriviaButton(Button):
     def reset_pos(self):
         """Resets the special effect animation to its initial settings."""
         self.x_transform = -20
-
-    def update_label(self):
-        """Updates the button's label."""
-        self.text = self.label_text
-        self.texture_update()
-
 
 class AnswerFeedbackLabel(Label):
 
@@ -529,6 +524,7 @@ class Feduquiz(App):
         self.sm.add_widget(Instructions(name='instructions'))
         self.sm.add_widget(Credits(name='credits'))
         self.sm.add_widget(Fetching(name='fetching'))
+        self.sm.add_widget(Joining(name='joining'))
         return self.sm
 
     def update_categories(self, property, api):

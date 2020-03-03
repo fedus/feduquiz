@@ -8,12 +8,13 @@ from helpers import get_categories
 BACKENDS = {
     "opentdb": {
         "url": "https://opentdb.com/api.php",
+        "token": "https://opentdb.com/api_token.php?command=request",
         "categories": get_categories()
 
     },
     "feduquizdb": {
         "url": "https://dillendapp.eu/feduquizdb/api/trivia",
-        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2]]
+        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2],["Cooking & baking", 3],["Italianità", 4]]
     }
 }
 
@@ -58,3 +59,6 @@ For multiplayer mode, players have to scan the QR code on the screen and be in t
 
 SECS_PER_QUESTION = 10
 TIMER_WARNING = 0.35
+
+MULTIPLAYER_GAME_PATTERN = 'fq-{}'
+MULTIPLAYER_JOIN_LINK_BASE = 'https://dillendapp.eu/feduquiz-client-basic/?gameid={}'

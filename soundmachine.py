@@ -68,7 +68,7 @@ class SoundMachine:
             Clock.schedule_once(lambda dt: self.proxy(self.snd_game, "play"), 0.25)
         else:
             self.proxy(self.snd_game, "stop")
-    
+
     def proxy(self, sound, command, new_val=None):
         """
         Various factors can have an impact on the ability to play a given sound

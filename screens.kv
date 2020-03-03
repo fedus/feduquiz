@@ -231,25 +231,13 @@
 
 <Score>
     title_text: 'Score'
-    player: app.trivia.players[0] if app.trivia.players else None
+    #player: app.trivia.players[0] if app.trivia.players else None
+    #player2: app.trivia.players[1] if app.trivia.players and len(app.trivia.players) > 1 else None
 
-    Label:
-        id: score
-        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
-        markup: True
-        text: '[b]{}[/b] / {}'.format(root.player.all_rounds[-1]['score'] if root.player and len(root.player.all_rounds) > 0 else 'N/A', app.trivia.total_rounds)
-        font_size: sp(160)
-        font_name: 'LondrinaSolid-Regular'
-    Label:
-        id: verdict
-        pos_hint: {'center_x': 0.5, 'center_y': 0.4}
-        text: root.player.all_rounds[-1]['verdict'] if root.player and len(root.player.all_rounds) > 0 else 'N/A'
-        font_size: sp(125)
-        font_name: 'LondrinaSolid-Light'
-        text_size: root.width*0.8, None
-        halign: 'center'
-        size: self.texture_size
-        size_hint: None, None
+    TopThree:
+        id: top_three_score
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
     PlayOrOptions:
         id: press_ok
         opacity: 0
@@ -260,3 +248,58 @@
 
     LoadingNotice:
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+<Joining>
+    title_text: 'Join the game'
+
+    BoxLayout:
+        pos_hint: {'center_x': 0.5, 'top': 0.7}
+        size_hint: 0.9, 0.5
+        orientation: 'horizontal'
+        spacing: 100
+
+        Image:
+            id: qr_img
+            texture: app.trivia.qr_code if app.trivia.qr_code else None
+            size: 500, 500
+            size_hint: None, None
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            allow_stretch: True
+
+        PlayerList:
+            pos_hint: {'top': 1, 'x': 0}
+
+    BoxLayout:
+        id: navigation
+        opacity: 0
+        pos_hint: {'center_x': 0.5, 'center_y': 0.10}
+        orientation: 'horizontal'
+        spacing: 20
+        padding: 20
+        size: self.minimum_size
+        size_hint: None, None
+
+        canvas.before:
+            Color:
+                rgba: (0, 0, 0, 0.3)
+
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [15,]
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [0,0,0,1]
+            butt_text: 'OK'
+            post_text: 'to start'
+            font_size: 30
+
+        PressColor:
+            pos_hint: {'center_y': 0.5}
+            pre_text: ''
+            butt_col: [1,0,0,1]
+            butt_text: 'RED'
+            post_text: 'for options'
+            font_size: 30

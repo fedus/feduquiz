@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from kivy.uix.image import Image, CoreImage
+
 import json
+import qrcode
+import io
 
 def get_verdict(score):
     if score == 1:              # 100 %
@@ -31,3 +35,17 @@ def get_categories():
         result.append([cat_pair['name'], cat_pair['id']])
     print(result)
     return result
+
+def make_qr_code(link_base, game_id):
+    url = link_base.format(game_id)
+
+    qr = qrcode.QRCode()
+    qr.add_data(url)
+    qr.make()
+
+    qr_code_png = qr.make_image(fill_color="white", back_color="purple")
+
+    qr_code_buffer = io.BytesIO()
+    qr_code_png.save(qr_code_buffer, format='PNG')
+
+    return CoreImage(io.BytesIO(qr_code_buffer.getvalue()), ext="png").texture

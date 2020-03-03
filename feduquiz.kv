@@ -305,8 +305,24 @@
 
 <GameButtons>
     size_hint: (1, 0.3)
-    btn_label_container: app.trivia.current_question['shuffled_answers'] if app.trivia.current_question else []
+    scale: 1
+    current_btn_label_container: app.trivia.current_question['shuffled_answers'] if app.trivia.current_question else []
+    cached_btn_label_container: []
     btn_size_hint: (0.49, 0.47) #if len(root.btn_label_container) > 2 else (0.49, 0.70) # clean this up!
+
+    canvas.before:
+
+        PushMatrix:
+
+        Scale:
+            origin: self.x + 0.5*self.width, self.y + 0.5*self.height
+            x: self.scale
+            y: self.scale
+
+    canvas.after:
+
+        PopMatrix:
+
     FloatLayout:
         size: root.size
         id: game_btn_layout
@@ -316,11 +332,11 @@
             secondary_scale_2: 1.4
             secondary_position_1: 0.25, -0.6
             secondary_position_2: -0.5, 0.75
-            primary_position: (0.25, 0.75) if len(root.btn_label_container) > 2 else (0.25, 0.5)
+            primary_position: (0.25, 0.75) if len(root.cached_btn_label_container) > 2 else (0.25, 0.5)
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            label_text: root.btn_label_container[0] if len(root.btn_label_container) > 0 else 'N/A'
+            text: root.cached_btn_label_container[0] if len(root.cached_btn_label_container) > 0 else 'N/A'
             base_color: 'red'
             on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
@@ -329,11 +345,11 @@
             secondary_scale_2: 1.6
             secondary_position_1: 0.75, -0.6
             secondary_position_2: 1.5, 0.75
-            primary_position: (0.75, 0.75) if len(root.btn_label_container) > 2 else (0.75, 0.5)
+            primary_position: (0.75, 0.75) if len(root.cached_btn_label_container) > 2 else (0.75, 0.5)
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            label_text: root.btn_label_container[1] if len(root.btn_label_container) > 1 else 'N/A'
+            text: root.cached_btn_label_container[1] if len(root.cached_btn_label_container) > 1 else 'N/A'
             base_color: 'green'
             on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
@@ -346,7 +362,7 @@
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            label_text: root.btn_label_container[2] if len(root.btn_label_container) > 2 else 'N/A'
+            text: root.cached_btn_label_container[2] if len(root.cached_btn_label_container) > 2 else 'N/A'
             base_color: 'yellow'
             on_press: app.trivia.single_player_answer(self.base_color)
         TriviaButton:
@@ -359,7 +375,7 @@
             scale: self.secondary_scale_1
             pos_hint: {'center_x': self.secondary_position_1[0], 'center_y': self.secondary_position_1[1]}
             size_hint: root.btn_size_hint
-            label_text: root.btn_label_container[3] if len(root.btn_label_container) > 3 else 'N/A'
+            text: root.cached_btn_label_container[3] if len(root.cached_btn_label_container) > 3 else 'N/A'
             base_color: 'blue'
             on_press: app.trivia.single_player_answer(self.base_color)
 
