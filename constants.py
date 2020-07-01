@@ -14,6 +14,7 @@ BACKENDS = {
     },
     "feduquizdb": {
         "url": "https://dillendapp.eu/feduquizdb/api/trivia",
+        "token": "http://localhost:5000/api/token/request",
         "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2],["Cooking & baking", 3],["Italianità", 4]]
     }
 }
