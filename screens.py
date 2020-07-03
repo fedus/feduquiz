@@ -339,7 +339,16 @@ class Fetching(TitleScreen):
 
 class Joining(TitleScreen):
 
+    players = ListProperty([])
+    waiting = ObjectProperty(rebind=True)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         App.get_running_app().add_callback(CEC_CMD_MAP["OK"], "joining", App.get_running_app().trivia.start_game)
         App.get_running_app().add_callback(CEC_CMD_MAP["RED"], "joining", partial(App.get_running_app().goto_screen, s_name='options'))
+
+    def on_players(self, widget, players):
+        if len(players):
+            Animation(opacity=0, duration=0.1).start(self.waiting)
+        else:
+            Animation(opacity=1, duration=0.1).start(self.waiting)

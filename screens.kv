@@ -251,6 +251,8 @@
 
 <Joining>
     title_text: 'Join the game'
+    players: app.trivia.players if app.trivia else []
+    waiting: waiting
 
     BoxLayout:
         pos_hint: {'center_x': 0.5, 'top': 0.7}
@@ -268,6 +270,22 @@
 
         PlayerList:
             pos_hint: {'top': 1, 'x': 0}
+
+    RoundedBox:
+        id: waiting
+        orientation: 'vertical'
+        size_hint: None, None
+        size: self.minimum_size
+        pos_hint: {'center_x': 0.65, 'center_y': 0.45}
+
+        Label:
+            id: waiting_label
+            text: 'Waiting for\nplayers ...'
+            font_name: 'PressStart2P-Regular'
+            font_size: 60
+            halign: 'center'
+            size_hint: None, None
+            size: self.texture_size
 
     BoxLayout:
         id: navigation
