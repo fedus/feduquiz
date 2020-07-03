@@ -21,16 +21,16 @@ DELAY_START = True if '--delay-start' in sys.argv else False
 
 
 class TitleScreen(Screen):
-    
+
     # Title_text is the string used to populate the MainTitle of the TitleScreen
     title_text = StringProperty()
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-            
+
     def on_pre_enter(self):
         self.reset_widgets()
-            
+
     def on_enter(self):
         """
         Starts animating in the MainTitle, and attches a callback to the animation
@@ -43,7 +43,7 @@ class TitleScreen(Screen):
             anim.start(self.ids.main_title)
         else:
             self.start_secondary_anims(None, None, direction='in')
-        
+
     def start_secondary_anims(self, anim, widget, direction):
         """
         Sequentially fades in all widgets except for the MainTitle (which is already visible
@@ -61,22 +61,22 @@ class TitleScreen(Screen):
             Clock.schedule_once(partial(fade_func, child), delay)
             delay += 0.1
         return delay
-            
+
     def fade_in_widget(self, widget, dt=None):
         """Fades in the given widget."""
         Animation(opacity=1, duration=0.5).start(widget)
-        
+
     def fade_out_widget(self, widget, dt=None):
         """Fades in the given widget."""
         Animation(opacity=0, duration=0.5).start(widget)
-        
+
     def reset_widgets(self):
         """Resets all widgets to their pre-animation state."""
         self.ids.main_title.scale = 0
         for child in self.children:
             if child.auto_anim:
                 child.opacity = 0
-                
+
     def goto_func(self, func):
         """
         Leave this screen by fading out all widgets and executing func()
