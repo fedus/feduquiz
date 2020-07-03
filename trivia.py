@@ -319,6 +319,8 @@ class Trivia(EventDispatcher):
             new_player = Player(self, name, id)
             if not self.does_player_exist(new_player):
                 self.players.append(new_player)
+                if self.current_state == TriviaStates.JOINING:
+                    App.get_running_app().snd_machine.player_join()
                 return new_player
             else:
                 print('Player {} with id {} already exists.'.format(name, id))

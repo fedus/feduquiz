@@ -305,6 +305,7 @@ class Score(TitleScreen):
 
     player = ObjectProperty(rebind=True)
     #player2 = ObjectProperty(rebind=True)
+    top_three = ObjectProperty(rebind=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -333,6 +334,10 @@ class Score(TitleScreen):
         # See explanation above
         super().reset_widgets()
         self.ids.press_ok.auto_anim = False
+
+    def on_pre_enter(self):
+        self.top_three.sort_and_render()
+        super().on_pre_enter()
 
 class Fetching(TitleScreen):
     pass

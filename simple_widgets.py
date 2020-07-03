@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.effectwidget import EffectWidget
 from kivy.uix.boxlayout import BoxLayout
@@ -93,7 +92,6 @@ class JoinedPlayer(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         Animation(opacity=1, duration=0.1).start(self)
-        App.get_running_app().snd_machine.player_join()
 
 class PlayerList(GridLayout):
 
@@ -132,15 +130,8 @@ class TopThree(BoxLayout):
         """Clears all player icons from list."""
         self.clear_widgets()
 
-    def on_players(self, widget, players):
-        players_in_game = list(map(lambda player: player.id, players))
-        players_in_list = list(map(lambda widget: widget.player.id, self.children))
-        new_players = [player for player in players if player.id not in players_in_list]
-        gone_players = [player for player in players_in_list if player not in players_in_game]
-        print('Existing: {}'.format(players_in_list))
-        print('New: {}, gone: {}'.format(list(map(lambda player: player.id, new_players)), list(map(lambda player: player.id, gone_players))))
-        for new_player in new_players:
-            self.add_widget(Highscore(player=new_player))
-        for gone_player in gone_players:
-            target_widget = next(filter(lambda widget: widget.player.id == gone_player.id, self.children), False)
-            self.remove_widget(target_widget)
+    def sort_and_render(self):
+        print(self.players)
+        self.clear()
+        for player in sorted(self.players, key=lambda player: player.all_rounds[-1]['position'] if len(player.all_rounds) else player.name):
+            self.add_widget(Highscore(player=player))
