@@ -30,7 +30,8 @@ from screens import TitleScreen, Intro, Options, Instructions, Credits, Game, Sc
 from simple_widgets import AlphaWidget, RoundedBox, PlayOrOptions, PressOK, PressColor
 from scrollmenu import ScrollMenu, FreeScrollView, ScrollAwareLayout, OptionButton, OptionIndicator
 from timer import TimerStates
-from constants import CEC_CMD_MAP, INSTRUCTION_TEXT, BACKENDS
+from constants import CEC_CMD_MAP, INSTRUCTION_TEXT
+from backends import backends
 
 import json
 import sys
@@ -412,7 +413,7 @@ class Author(BoxLayout):
         ).start(self)
 
 class CategoryAuthorCombo(RelativeLayout):
-    
+
     category_scroll_size = ListProperty([0, 0])
 
 class TimerBar(Widget):
@@ -471,13 +472,14 @@ class Feduquiz(App):
     opt_multiplayer = BooleanProperty(False)
 
     categories = ListProperty([['All', 0]])
-    backends = ListProperty([["Open Trivia DB", "opentdb"],["Feduquiz DB", "feduquizdb"]])
-    
+    backends = ListProperty([])
+
     instruction_text = StringProperty(INSTRUCTION_TEXT)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.categories = BACKENDS["opentdb"]["categories"]
+        self.backends = list(map(lambda backend_key: [backends[backend_key].get('name'), backend_key], sorted(list(backends.keys()))))
+        self.categories = backends["opentdb"]["categories"]
         self.bind(opt_api=self.update_categories)
         self.fps_event = Clock.schedule_interval(self.print_fps, 1/2.0)
         self.sm = None
@@ -528,7 +530,7 @@ class Feduquiz(App):
         return self.sm
 
     def update_categories(self, property, api):
-        self.categories = BACKENDS[api]["categories"]
+        self.categories = backends[api]["categories"]
 
     def goto_screen(self, s_name=None, menu_mode=True):
         """Go to given screen by animating if possible."""
@@ -577,7 +579,7 @@ class Feduquiz(App):
         # Return True to accept the key. Otherwise, it will be used by
         # the system.
         #return True
-        
+
     def print_fps(self, *args):
         fps = Clock.get_fps()
         print("{} Fps    ".format(int(fps)), end='\r')

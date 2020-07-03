@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helpers import get_categories
-
-# Backend settings
-
-BACKENDS = {
-    "opentdb": {
-        "url": "https://opentdb.com/api.php",
-        "token": "https://opentdb.com/api_token.php?command=request",
-        "categories": get_categories()
-
-    },
-    "feduquizdb": {
-        "url": "https://dillendapp.eu/feduquizdb/api/trivia",
-        "token": "https://dillendapp.eu/feduquizdb/api/token/request",
-        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2],["Cooking & baking", 3],["Italianità", 4]]
-    }
-}
-
 # Useful constants and strings
 
 CEC_CMD_MAP = {

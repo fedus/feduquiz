@@ -15,7 +15,8 @@ from enum import Enum
 from helpers import get_verdict, make_qr_code
 from timer import Timer
 from gameserver import MQTTGameServer
-from constants import BACKENDS, SECS_PER_QUESTION, MULTIPLAYER_GAME_PATTERN, MULTIPLAYER_JOIN_LINK_BASE
+from constants import SECS_PER_QUESTION, MULTIPLAYER_GAME_PATTERN, MULTIPLAYER_JOIN_LINK_BASE
+from backends import backends
 
 import json
 
@@ -410,9 +411,9 @@ class Trivia(EventDispatcher):
         self.transitioning = False
 
     def check_token_and_fetch_new(self, api, difficulty, category, amount, q_type):
-        if not self.token and "token" in BACKENDS[api]:
+        if not self.token and "token" in backends[api]:
             UrlRequest(
-                BACKENDS[api]['token'],
+                backends[api]['token'],
                 on_success=partial(self.save_token_and_fetch_new, api, difficulty, category, amount, q_type),
                 on_failure=self.fetch_fail,
                 on_error=self.fetch_error
@@ -431,7 +432,7 @@ class Trivia(EventDispatcher):
                 data = json.load(f)
             self.fetch_success(None, data)
         else:
-            base_url = BACKENDS[api]['url'] + '?'
+            base_url = backends[api]['url'] + '?'
             if self.token:
                 base_url += 'token=' + str(self.token) + '&'
             if difficulty is not '':
