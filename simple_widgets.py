@@ -64,7 +64,7 @@ class LoadingSpinner(Widget):
     angle_start: NumericProperty(0)
     angle_end: NumericProperty(0)
     random_rotation: NumericProperty(0)
-    
+
     def __init__(self, *args, **kwargs):
         super(LoadingSpinner, self).__init__(*args, **kwargs)
         self.anim = (
@@ -83,13 +83,13 @@ class LoadingNotice(BoxLayout):
     pass
 
 class JoinedPlayer(BoxLayout):
-    
+
     player = ObjectProperty(rebind=True)
     initial_lbl = ObjectProperty(rebind=True)
     name_lbl = ObjectProperty(rebind=True)
 
 class PlayerList(GridLayout):
-    
+
     players = ListProperty([])
 
     def clear(self):
