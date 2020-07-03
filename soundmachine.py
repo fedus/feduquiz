@@ -26,6 +26,7 @@ class SoundMachine:
             'wrong': SoundLoader.load('resources/wrong.wav'),
             'neutral': SoundLoader.load('resources/neutral.wav')
         }
+        self.snd_join = SoundLoader.load('resources/join.wav')
 
     def btn_sel(self):
         """Sound to play for an OptionButton selection."""
@@ -46,6 +47,9 @@ class SoundMachine:
 
     def timer_timeout(self):
         self.proxy(self.snd_timeout, "play")
+
+    def player_join(self):
+        self.proxy(self.snd_join, "play")
 
     def mode_menu(self, run=True):
         """Switch background music to menu mode."""

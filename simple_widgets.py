@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.effectwidget import EffectWidget
 from kivy.uix.boxlayout import BoxLayout
@@ -87,6 +88,12 @@ class JoinedPlayer(BoxLayout):
     player = ObjectProperty(rebind=True)
     initial_lbl = ObjectProperty(rebind=True)
     name_lbl = ObjectProperty(rebind=True)
+    opacity = NumericProperty(0)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        Animation(opacity=1, duration=0.1).start(self)
+        App.get_running_app().snd_machine.player_join()
 
 class PlayerList(GridLayout):
 
