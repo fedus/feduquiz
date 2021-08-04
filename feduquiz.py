@@ -42,6 +42,7 @@ import sys
 DISABLE_CEC = True if '--disable-cec' in sys.argv else False
 USE_SAMPLE_DATA = True if '--use-sample-data' in sys.argv else False
 SET_SIZE = True if '--set-size' in sys.argv else False
+SET_FULLSCREEN = True if '--set-fullscreen' in sys.argv else False
 
 class GameButtons(Widget):
 
@@ -503,6 +504,9 @@ class Feduquiz(App):
             Window.size = (1920, 1080)
             Window.left = 0
             Window.top = 1
+
+        if SET_FULLSCREEN:
+            Window.fullscreen = True
 
         # Get keyboard
         #self._keyboard = Window.request_keyboard(self._keyboard_closed, self)

@@ -17,6 +17,14 @@ backends = {
         "name": "Feduquiz DB",
         "url": "https://dillendapp.eu/feduquizdb/api/trivia",
         "token": "https://dillendapp.eu/feduquizdb/api/token/request",
-        "categories": [["All", -1], ["General knowledge", 1],["Luxemburgensia", 2],["Cooking & baking", 3],["Italianità", 4],["Die bucklige Verwandtschaft",9]]
+        "categories": [
+            ["All", -1],
+            ["General knowledge", 1],
+            ["Luxemburgensia", 2],
+            ["Cooking & baking", 3],
+            ["Italianità", 4],
+            ["Die bucklige Verwandtschaft",9],
+            ["Scotland!!!",15]
+        ]
     }
 }
