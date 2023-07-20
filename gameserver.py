@@ -1,6 +1,7 @@
 """Game server (MQTT based)."""
 
 from kivy.event import EventDispatcher
+from kivy.clock import mainthread
 from functools import partial
 
 from auth import MQTT_CONF
@@ -45,6 +46,7 @@ class MQTTGameServer(EventDispatcher):
         self._client.message_callback_add(topic, callback)
         self._callback_subscriptions.append(topic)
 
+    @mainthread
     def on_player_join(self, client, userdata, message):
         """Handle player join attempts."""
         player_id = message.topic.split('/')[-1]
